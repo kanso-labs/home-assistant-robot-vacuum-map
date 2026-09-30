@@ -1,5 +1,7 @@
+import asyncio
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import Any, Self
 
 from vacuum_map_parser_base.config.color import ColorsPalette
@@ -51,8 +53,7 @@ class BaseXiaomiCloudVacuum(ABC):
     def map_archive_extension(self: Self) -> str:
         pass
 
-    @property
-    def should_update_map(self: Self) -> bool:
+    async def should_update_map(self: Self) -> bool:
         return True
 
     @property
@@ -103,3 +104,12 @@ class BaseXiaomiCloudVacuum(ABC):
 
     def additional_data(self: Self) -> dict[str, Any]:
         return {}
+
+    @staticmethod
+    async def _in_executor[T](call: Callable[..., T], *args: Any) -> T:
+        """Run a blocking call, as every python-miio read is, in the executor.
+
+        python-miio waits for the vacuum to answer, and retries when it does not,
+        so on the event loop a slow vacuum would hold up all of Home Assistant.
+        """
+        return await asyncio.get_running_loop().run_in_executor(None, call, *args)

@@ -204,7 +204,12 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         )
         self._off_counter = 0
         self._status_value = None
+        # What the parse adds to the map, read before it, since the parse
+        # cannot wait on the vacuum.
         self._trajectory: list[dict[str, Any]] = []
+        self._restricted_areas: Any = None
+        self._restricted_walls: Any = None
+        self._position: Any = None
         # The last value read from each MIoT property, keyed siid-piid, and the
         # last trajectory object downloaded, both kept for diagnostics.
         self._property_values: dict[str, Any] = {}
@@ -227,14 +232,15 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             None,
         )
 
-    @property
-    def should_update_map(self: Self) -> bool:
+    async def should_update_map(self: Self) -> bool:
         try:
             status_value = self._live_status()
             if status_value is None:
-                status_value = self._miot_device.get_property_by(
-                    self._status_mapping.siid, self._status_mapping.piid
-                )[0]["value"]
+                status_value = (
+                    await self._read_property(
+                        self._status_mapping.siid, self._status_mapping.piid
+                    )
+                )["value"]
             self._status_value = status_value
             self._remember(
                 self._status_mapping.siid, self._status_mapping.piid, status_value
@@ -269,9 +275,9 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     async def get_map_name(self: Self) -> str:
         response = self._live_value(self._vacuum_map.siid, self._vacuum_map.piid)
         if response is None:
-            response = self._miot_device.get_property_by(
-                self._vacuum_map.siid, self._vacuum_map.piid
-            )[0].get("value")
+            response = (
+                await self._read_property(self._vacuum_map.siid, self._vacuum_map.piid)
+            ).get("value")
         self._remember(self._vacuum_map.siid, self._vacuum_map.piid, response)
 
         if response is None:
@@ -294,9 +300,23 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         return await self.get_fallback_map_url(map_name)
 
     async def get_map(self: Self) -> tuple[MapData, bytes]:
-        if self._live_map is not None:
-            self._trajectory = await self._get_trajectory()
+        await self._read_live_data()
         return await super().get_map()
+
+    async def _read_live_data(self: Self) -> None:
+        """Read what the parse adds to the map from outside it."""
+        if self._live_map is None:
+            return
+        self._trajectory = await self._get_trajectory()
+        self._restricted_areas = await self._get_live_property(
+            *self._live_map.restricted_areas
+        )
+        self._restricted_walls = await self._get_live_property(
+            *self._live_map.restricted_walls
+        )
+        self._position = await self._get_live_property(
+            self._live_map.siid, self._live_map.position_piid
+        )
 
     async def _get_trajectory(self: Self) -> list[dict[str, Any]]:
         """The path so far, from the trajectory object property 7-2 names."""
@@ -305,7 +325,9 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             # Back on the dock, the trajectory is the last clean's.
             return []
         name = cloud_object_name(
-            self._get_live_property(self._live_map.siid, self._live_map.trajectory_piid)
+            await self._get_live_property(
+                self._live_map.siid, self._live_map.trajectory_piid
+            )
         )
         if name is None:
             return []
@@ -347,12 +369,10 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
 
         payload = with_restricted_regions(
             with_path(payload, self._trajectory),
-            self._get_live_property(*self._live_map.restricted_areas),
-            self._get_live_property(*self._live_map.restricted_walls),
+            self._restricted_areas,
+            self._restricted_walls,
         )
-        position = parse_vacuum_position(
-            self._get_live_property(self._live_map.siid, self._live_map.position_piid)
-        )
+        position = parse_vacuum_position(self._position)
         return place_vacuum(
             payload,
             position,
@@ -449,17 +469,24 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             return None
         return self._live_properties.value(siid, piid)
 
-    def _get_live_property(self: Self, siid: int, piid: int) -> Any:
+    async def _get_live_property(self: Self, siid: int, piid: int) -> Any:
         if (value := self._live_value(siid, piid)) is not None:
             self._remember(siid, piid, value)
             return value
         try:
-            value = self._miot_device.get_property_by(siid, piid)[0].get("value")
+            value = (await self._read_property(siid, piid)).get("value")
         except DeviceException as de:
             _LOGGER.debug("Failed to read MIoT property %d-%d: %s", siid, piid, de)
             return None
         self._remember(siid, piid, value)
         return value
+
+    async def _read_property(self: Self, siid: int, piid: int) -> dict[str, Any]:
+        """The vacuum's answer for a MIoT property."""
+        response = await self._in_executor(
+            self._miot_device.get_property_by, siid, piid
+        )
+        return response[0]
 
     def _remember(self: Self, siid: int, piid: int, value: Any) -> None:
         self._property_values[f"{siid}-{piid}"] = value

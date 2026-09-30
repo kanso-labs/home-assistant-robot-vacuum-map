@@ -90,8 +90,10 @@ class DreameCloudVacuum(BaseXiaomiCloudVacuumV2):
             return map_name
         else:
             try:
-                self._dreame_vacuum.call_action(
-                    "map_view", params=[{"piid": 2, "value": '{"frame_type":"I"}'}]
+                await self._in_executor(
+                    self._dreame_vacuum.call_action,
+                    "map_view",
+                    [{"piid": 2, "value": '{"frame_type":"I"}'}],
                 )
             except DeviceException as e:
                 _LOGGER.debug("Error while calling map_view: %s", e)

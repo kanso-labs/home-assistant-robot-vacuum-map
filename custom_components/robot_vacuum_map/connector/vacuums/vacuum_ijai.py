@@ -41,11 +41,14 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._status_mapping = get_status_mapping(self.model)
         self._off_counter = 0
 
-    @property
-    def should_update_map(self: Self) -> bool:
+    async def should_update_map(self: Self) -> bool:
         try:
-            status_value = self._miot_device.get_property_by(
-                self._status_mapping.siid, self._status_mapping.piid
+            status_value = (
+                await self._in_executor(
+                    self._miot_device.get_property_by,
+                    self._status_mapping.siid,
+                    self._status_mapping.piid,
+                )
             )[0]["value"]
 
             if status_value in self._status_mapping.idle_at:
@@ -112,19 +115,23 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
                     wifi_info_sn = cleaned_prop
         return wifi_info_sn
 
-    def decode_and_parse(self, raw_map: bytes) -> MapData:
+    async def get_map(self: Self) -> tuple[MapData, bytes]:
+        # The serial number decrypts the map, so it is read before the parse,
+        # which cannot wait on the vacuum.
         GET_PROP_RETRIES = 5
         if self._wifi_info_sn is None or self._wifi_info_sn == "":
             _LOGGER.debug("host=%s", self._host)
             for _ in range(GET_PROP_RETRIES):
                 try:
-                    self._wifi_info_sn = self.get_wifi_info_sn()
+                    self._wifi_info_sn = await self._in_executor(self.get_wifi_info_sn)
                     _LOGGER.debug(f"Got wifi_sn {self._wifi_info_sn}")
                     break
                 except Exception as ex:
                     _LOGGER.error("Failed to get wifi_sn from vacuum")
                     raise FailedConnectionException(ex)
+        return await super().get_map()
 
+    def decode_and_parse(self, raw_map: bytes) -> MapData:
         decoded_map = self.map_data_parser.unpack_map(
             raw_map,
             wifi_sn=self._wifi_info_sn,
