@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.1.1...v0.2.0) (2026-09-30)
+
+
+### Features
+
+* **xiaomi:** draw the b108gl robot live from MIoT property 7-4 ([#40](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/40)) ([8231766](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/82317660d0f1e23b8b93133c5313f73702f9ab4b))
+
 ## [0.1.1](https://github.com/kanso-labs/home-assistant-xiaomi-cloud-map/compare/v0.1.0...v0.1.1) (2026-09-30)
 
 
