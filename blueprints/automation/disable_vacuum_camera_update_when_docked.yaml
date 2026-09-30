@@ -1,7 +1,8 @@
 ---
 blueprint:
   name: Disable vacuum camera update when docked
-  description: Disable the automatic update of the vacuum camera when the robot is docked.
+  description:
+    Disable the automatic update of the vacuum camera when the robot is docked.
   domain: automation
   source_url: https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor/blob/master/blueprints/automation/disable_vacuum_camera_update_when_docked.yaml
   input:

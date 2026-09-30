@@ -1,9 +1,7 @@
 {
   "domain": "xiaomi_cloud_map",
   "name": "Xiaomi Cloud Map",
-  "codeowners": [
-    "@rodrigoscna"
-  ],
+  "codeowners": ["@rodrigoscna"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/kanso-labs/home-assistant-xiaomi-cloud-map",

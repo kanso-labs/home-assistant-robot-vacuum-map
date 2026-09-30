@@ -3,7 +3,7 @@ blueprint:
   name: Update Map Extractor camera
   description: |-
     Controls update interval of a Map Extractor camera.
-    
+
     There are 5 modes available:
       - Two intervals - automation controls camera updates both when vacuum is cleaning or docked. To use with `auto_update: false` in camera's configuration.
       - Turn off when docked - completely turns off vacuum updates when the vacuum is docked. Uses default interval when cleaning.
@@ -75,7 +75,7 @@ blueprint:
         Used only in `Only when card visible` mode
       selector:
         text:
-      default: "/lovelace/vacuum"
+      default: '/lovelace/vacuum'
 
 mode: parallel
 
@@ -87,7 +87,9 @@ variables:
   vacuum_entity: !input vacuum
   camera_entity: !input camera
   browser_mod_path: !input browser_mod_path
-  is_vacuum_docked: "{{ states(vacuum_entity) in ['unavailable', 'unknown', 'docked', 'sleeping'] }}"
+  is_vacuum_docked:
+    "{{ states(vacuum_entity) in ['unavailable', 'unknown', 'docked',
+    'sleeping'] }}"
   is_interval_docked_trigger: |-
     {{ 
       mode_to_handle in ['two_intervals', 'default_when_cleaning'] 
@@ -155,23 +157,25 @@ condition:
   - condition: or
     conditions:
       - condition: template
-        value_template: "{{ is_interval_docked_trigger }}"
+        value_template: '{{ is_interval_docked_trigger }}'
       - condition: template
-        value_template: "{{ is_interval_cleaning_trigger }}"
+        value_template: '{{ is_interval_cleaning_trigger }}'
       - condition: template
-        value_template: "{{ is_vacuum_state_trigger }}"
+        value_template: '{{ is_vacuum_state_trigger }}'
       - condition: template
-        value_template: "{{ is_browser_mod_template_trigger }}"
+        value_template: '{{ is_browser_mod_template_trigger }}'
       - condition: template
-        value_template: "{{ is_vacuum_docked_trigger }}"
+        value_template: '{{ is_vacuum_docked_trigger }}'
 
 action:
   - choose:
-      - conditions: "{{ is_interval_docked_trigger or is_interval_cleaning_trigger or is_vacuum_docked_trigger }}"
+      - conditions:
+          '{{ is_interval_docked_trigger or is_interval_cleaning_trigger or
+          is_vacuum_docked_trigger }}'
         sequence:
           - service: homeassistant.update_entity
             entity_id: !input camera
-      - conditions: "{{ is_vacuum_state_trigger }}"
+      - conditions: '{{ is_vacuum_state_trigger }}'
         sequence:
           - choose:
               - conditions: |-
@@ -179,16 +183,21 @@ action:
                     mode_to_handle in ['turn_off_when_docked', 'default_when_cleaning']
                   }}
                 sequence:
-                  - service: "camera.{{ is_vacuum_docked | iif('turn_off', 'turn_on') }}"
+                  - service:
+                      "camera.{{ is_vacuum_docked | iif('turn_off', 'turn_on')
+                      }}"
                     entity_id: !input camera
               - conditions: |-
                   {{
                     mode_to_handle in ['default_when_docked']
                   }}
                 sequence:
-                  - service: "camera.{{ is_vacuum_docked | iif('turn_on', 'turn_off') }}"
+                  - service:
+                      "camera.{{ is_vacuum_docked | iif('turn_on', 'turn_off')
+                      }}"
                     entity_id: !input camera
-      - conditions: "{{ is_browser_mod_template_trigger }}"
+      - conditions: '{{ is_browser_mod_template_trigger }}'
         sequence:
-          - service: "camera.{{ (active_browsers > 0) | iif('turn_on', 'turn_off') }}"
+          - service:
+              "camera.{{ (active_browsers > 0) | iif('turn_on', 'turn_off') }}"
             entity_id: !input camera
