@@ -8,21 +8,23 @@ name = "home-assistant-xiaomi-cloud-map"
 requires-python = ">=3.14.2"
 version = "0.0.0"
 
+# Split in two so the lint job installs ruff alone rather than Home Assistant.
+# A plain `uv run` installs both groups, which is what a local run wants.
 [dependency-groups]
-dev = [
+lint = ["ruff==0.16.9"]
+test = [
   "pytest-homeassistant-custom-component==0.13.367",
-  "ruff==0.16.9",
   # Home Assistant's camera component requires this at this pin, and its test
   # harness installs no component's requirements, core ones included.
   "PyTurboJPEG==1.8.3",
-  # manifest.json's requirements, at the same pins. Home Assistant's test
-  # harness never installs an integration's requirements, so the tests can
-  # only import the integration if they are already here. Pillow is absent for
-  # the reason it is unpinned in the manifest: Home Assistant pins it itself.
   # vacuum-map-parser-ijai imports protobuf without declaring it. Home
   # Assistant's own images carry it, at the version its package constraints
   # pin, so the tests take that version too.
   "protobuf==6.32.0",
+  # manifest.json's requirements, at the same pins. Home Assistant's test
+  # harness never installs an integration's requirements, so the tests can
+  # only import the integration if they are already here. Pillow is absent for
+  # the reason it is unpinned in the manifest: Home Assistant pins it itself.
   "pybase64==1.5.0",
   "pycryptodome==3.23.0",
   "python-miio==0.5.12",
@@ -51,4 +53,5 @@ target-version = "py314"
 "custom_components/xiaomi_cloud_map/connector/**" = ["BLE001", "DTZ005", "S110"]
 
 [tool.uv]
+default-groups = ["lint", "test"]
 package = false
