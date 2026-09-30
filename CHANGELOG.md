@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.2.0...v0.3.0) (2026-09-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename the integration to Xiaomi Vacuum Map ([#43](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/43))
+
+### Code Refactoring
+
+* rename the integration to Xiaomi Vacuum Map ([#43](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/43)) ([5ce27e6](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/5ce27e69e425238e2cdafe4e9b03761f4db2ecf1))
+
 ## [0.2.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.1.1...v0.2.0) (2026-09-30)
 
 
