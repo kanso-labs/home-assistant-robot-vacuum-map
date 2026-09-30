@@ -9,6 +9,7 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.robot_vacuum_map.const import DOMAIN
+from custom_components.robot_vacuum_map.xiaomi_home import XIAOMI_HOME_DOMAIN
 
 
 async def test_setup_and_unload(
@@ -27,6 +28,7 @@ async def test_setup_and_unload(
         (DOMAIN, "123456789"), config_entry.entry_id
     )
     assert device is not None
+    assert device.via_device_id is None
     entities = er.async_entries_for_config_entry(
         er.async_get(hass), config_entry.entry_id
     )
@@ -37,3 +39,26 @@ async def test_setup_and_unload(
     await hass.async_block_till_done()
 
     assert config_entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_connects_the_map_via_xiaomi_home_s_vacuum(
+    hass: HomeAssistant, config_entry: MockConfigEntry, get_data: AsyncMock
+) -> None:
+    """With Xiaomi Home holding the vacuum, the map's device names it as its via."""
+    xiaomi_home = MockConfigEntry(domain=XIAOMI_HOME_DOMAIN)
+    xiaomi_home.add_to_hass(hass)
+    vacuum = dr.async_get(hass).async_get_or_create(
+        config_entry_id=xiaomi_home.entry_id,
+        identifiers={(XIAOMI_HOME_DOMAIN, "de_123456789")},
+        name="S20+",
+    )
+    config_entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, "123456789"), config_entry.entry_id
+    )
+    assert device.via_device_id == vacuum.id
+    assert device.id != vacuum.id

@@ -45,6 +45,7 @@ from .types import (
     XiaomiCloudMapExtractorConfigEntry,
     XiaomiCloudMapExtractorRuntimeData,
 )
+from .xiaomi_home import xiaomi_home_device_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +66,12 @@ async def async_setup_entry(
         hass, xcme_connector
     )
     await xcme_update_coordinator.async_config_entry_first_refresh()
-    entry.runtime_data = XiaomiCloudMapExtractorRuntimeData(xcme_update_coordinator)
+    entry.runtime_data = XiaomiCloudMapExtractorRuntimeData(
+        xcme_update_coordinator,
+        xiaomi_home_device_id(
+            hass, entry.data[CONF_SERVER], entry.data[CONF_DEVICE_ID]
+        ),
+    )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
