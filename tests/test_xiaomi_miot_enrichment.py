@@ -356,3 +356,39 @@ def test_reads_a_no_mop_area_by_its_fb_attr() -> None:
     )
 
     assert payload["fb_regions"] == [{"type": "no_mop", "points": CORNERS}]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # Captured from a real S20+ while it swept, and while it drove home.
+        ('{"position":[-2630,-3280,6054]}', {"x": -2630.0, "y": -3280.0, "yaw": 6.054}),
+        ('{"position":[-1290,-1810,870]}', {"x": -1290.0, "y": -1810.0, "yaw": 0.87}),
+        ('{"position":[-2630,-3280]}', {"x": -2630.0, "y": -3280.0, "yaw": 0}),
+    ],
+)
+def test_parses_the_position_a_real_s20_plus_publishes(value, expected) -> None:
+    """Its yaw is in milliradians, and goes on in radians for the parser."""
+    assert parse_vacuum_position(value) == expected
+
+
+def test_reads_the_areas_a_real_s20_plus_lists_under_forbidden_regions() -> None:
+    """A real S20+ lists its 2-11 areas under forbidden_regions."""
+    payload = with_restricted_regions(
+        {},
+        '{"forbidden_regions":[[100, 100, 400, 100, 400, 300, 100, 300]]}',
+        None,
+    )
+
+    assert payload["fb_regions"] == [{"type": "no_go", "points": CORNERS}]
+
+
+def test_reads_no_areas_from_the_empty_list_a_real_s20_plus_publishes() -> None:
+    payload = {"width": 20}
+
+    assert (
+        with_restricted_regions(
+            payload, '{"forbidden_regions":[]}', '{"restricted_walls":[]}'
+        )
+        is payload
+    )
