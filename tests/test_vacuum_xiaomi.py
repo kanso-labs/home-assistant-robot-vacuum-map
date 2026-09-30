@@ -415,3 +415,12 @@ def test_b108gl_drops_areas_and_walls_once_removed() -> None:
 
     assert map_data.no_go_areas == []
     assert map_data.walls == []
+
+
+@pytest.mark.parametrize("value", [None, "not an object name"])
+async def test_falls_back_to_the_default_map_name(value: Any) -> None:
+    """With no map name in its property, the connector asks for the default."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(7, 1): value})
+
+    assert await vacuum.get_map_name() == "0"

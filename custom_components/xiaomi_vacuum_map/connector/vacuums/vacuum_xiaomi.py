@@ -239,7 +239,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         )[0].get("value")
 
         if response is None:
-            return super().get_map_name()
+            return await super().get_map_name()
 
         if isinstance(response, int):
             return str(response)
@@ -251,7 +251,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
                 if isinstance(response, str) and "/" in response:
                     map_name = response
             if map_name is None:
-                return super().get_map_name()
+                return await super().get_map_name()
             return map_name.split("/")[-1]
 
     async def get_map_url(self, map_name: str) -> str | None:
