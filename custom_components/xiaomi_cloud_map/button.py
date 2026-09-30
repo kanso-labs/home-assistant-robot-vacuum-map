@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from typing import Any, Coroutine
+from typing import Any
 
 from homeassistant.components.button import (
+    DOMAIN,
+    ButtonDeviceClass,
     ButtonEntity,
     ButtonEntityDescription,
-    ButtonDeviceClass,
-    DOMAIN,
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -21,7 +21,9 @@ from .types import XiaomiCloudMapExtractorConfigEntry
 
 @dataclass(frozen=True, kw_only=True)
 class XiaomiCloudMapExtractorButtonEntityDescription(ButtonEntityDescription):
-    press_fn: Callable[[XiaomiCloudMapExtractorDataUpdateCoordinator], Coroutine[Any, Any, None]]
+    press_fn: Callable[
+        [XiaomiCloudMapExtractorDataUpdateCoordinator], Coroutine[Any, Any, None]
+    ]
 
 
 BUTTON_TYPES: tuple[XiaomiCloudMapExtractorButtonEntityDescription, ...] = (
@@ -38,9 +40,9 @@ BUTTON_TYPES: tuple[XiaomiCloudMapExtractorButtonEntityDescription, ...] = (
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: XiaomiCloudMapExtractorConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: XiaomiCloudMapExtractorConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = config_entry.runtime_data.coordinator
 
@@ -54,10 +56,10 @@ class XiaomiCloudMapExtractorButtonEntity(XiaomiCloudMapExtractorEntity, ButtonE
     entity_description: XiaomiCloudMapExtractorButtonEntityDescription
 
     def __init__(
-            self,
-            coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
-            config_entry: XiaomiCloudMapExtractorConfigEntry,
-            description: XiaomiCloudMapExtractorButtonEntityDescription,
+        self,
+        coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
+        config_entry: XiaomiCloudMapExtractorConfigEntry,
+        description: XiaomiCloudMapExtractorButtonEntityDescription,
     ) -> None:
         super().__init__(coordinator, config_entry, DOMAIN, description.key)
 

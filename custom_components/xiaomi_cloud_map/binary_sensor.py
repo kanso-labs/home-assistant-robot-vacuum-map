@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
+    DOMAIN,
     BinarySensorEntity,
     BinarySensorEntityDescription,
-    DOMAIN,
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -21,7 +21,9 @@ from .types import XiaomiCloudMapExtractorConfigEntry
 
 
 @dataclass(frozen=True, kw_only=True)
-class XiaomiCloudMapExtractorBinarySensorEntityDescription(BinarySensorEntityDescription):
+class XiaomiCloudMapExtractorBinarySensorEntityDescription(
+    BinarySensorEntityDescription
+):
     value_fn: Callable[[MapData], bool]
     attributes_fn: Callable[[MapData], dict[str, Any]] = lambda _: {}
 
@@ -39,26 +41,30 @@ SENSOR_TYPES: tuple[XiaomiCloudMapExtractorBinarySensorEntityDescription, ...] =
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: XiaomiCloudMapExtractorConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: XiaomiCloudMapExtractorConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = config_entry.runtime_data.coordinator
 
     async_add_entities(
-        XiaomiCloudMapExtractorBinarySensorEntity(coordinator, config_entry, description)
+        XiaomiCloudMapExtractorBinarySensorEntity(
+            coordinator, config_entry, description
+        )
         for description in SENSOR_TYPES
     )
 
 
-class XiaomiCloudMapExtractorBinarySensorEntity(XiaomiCloudMapExtractorEntity, BinarySensorEntity):
+class XiaomiCloudMapExtractorBinarySensorEntity(
+    XiaomiCloudMapExtractorEntity, BinarySensorEntity
+):
     entity_description: XiaomiCloudMapExtractorBinarySensorEntityDescription
 
     def __init__(
-            self,
-            coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
-            config_entry: XiaomiCloudMapExtractorConfigEntry,
-            description: XiaomiCloudMapExtractorBinarySensorEntityDescription,
+        self,
+        coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
+        config_entry: XiaomiCloudMapExtractorConfigEntry,
+        description: XiaomiCloudMapExtractorBinarySensorEntityDescription,
     ) -> None:
         super().__init__(coordinator, config_entry, DOMAIN, description.key)
 

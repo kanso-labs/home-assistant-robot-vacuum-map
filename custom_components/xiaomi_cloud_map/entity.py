@@ -1,15 +1,16 @@
-from typing import Self, Any
+from typing import Any, Self
 
 from homeassistant.const import (
+    CONF_DEVICE_ID,
     CONF_HOST,
-    CONF_TOKEN,
     CONF_MAC,
-    CONF_USERNAME,
-    CONF_PASSWORD,
     CONF_MODEL,
-    CONF_DEVICE_ID, CONF_NAME
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_TOKEN,
+    CONF_USERNAME,
 )
-from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from vacuum_map_parser_base.map_data import MapData
 
@@ -20,9 +21,13 @@ from .coordinator import XiaomiCloudMapExtractorDataUpdateCoordinator
 from .types import XiaomiCloudMapExtractorConfigEntry
 
 
-class XiaomiCloudMapExtractorEntity(CoordinatorEntity[XiaomiCloudMapExtractorDataUpdateCoordinator]):
+class XiaomiCloudMapExtractorEntity(
+    CoordinatorEntity[XiaomiCloudMapExtractorDataUpdateCoordinator]
+):
     _attr_has_entity_name = True
-    _entity_component_unrecorded_attributes = frozenset({"path", "zones", "walls", "obstacles", "areas", "calibration_points", "rooms"})
+    _entity_component_unrecorded_attributes = frozenset(
+        {"path", "zones", "walls", "obstacles", "areas", "calibration_points", "rooms"}
+    )
     _host: str
     _token: str
     _mac: str
@@ -35,11 +40,11 @@ class XiaomiCloudMapExtractorEntity(CoordinatorEntity[XiaomiCloudMapExtractorDat
     _attr_device_info: DeviceInfo
 
     def __init__(
-            self: Self,
-            coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
-            config_entry: XiaomiCloudMapExtractorConfigEntry,
-            domain: str,
-            key: str,
+        self: Self,
+        coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
+        config_entry: XiaomiCloudMapExtractorConfigEntry,
+        domain: str,
+        key: str,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
@@ -78,5 +83,7 @@ class XiaomiCloudMapExtractorEntity(CoordinatorEntity[XiaomiCloudMapExtractorDat
         if data.last_update_timestamp:
             attributes["last_update_timestamp"] = data.last_update_timestamp
         if data.last_successful_update_timestamp:
-            attributes["last_successful_update_timestamp"] = data.last_successful_update_timestamp
+            attributes["last_successful_update_timestamp"] = (
+                data.last_successful_update_timestamp
+            )
         return attributes

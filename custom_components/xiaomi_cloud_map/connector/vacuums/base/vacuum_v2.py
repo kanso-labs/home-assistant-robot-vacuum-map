@@ -1,8 +1,8 @@
 from abc import ABC
-from typing import Self, Any
+from typing import Any, Self
 
-from .vacuum_base import BaseXiaomiCloudVacuum, VacuumConfig
 from ...utils.dict_operations import path_extractor
+from .vacuum_base import BaseXiaomiCloudVacuum, VacuumConfig
 
 
 class BaseXiaomiCloudVacuumV2(BaseXiaomiCloudVacuum, ABC):
@@ -13,7 +13,9 @@ class BaseXiaomiCloudVacuumV2(BaseXiaomiCloudVacuum, ABC):
         self.last_used_url = None
 
     async def get_map_url(self: Self, map_name: str) -> str | None:
-        url = self._connector.get_api_url(self._server) + '/v2/home/get_interim_file_url'
+        url = (
+            self._connector.get_api_url(self._server) + "/v2/home/get_interim_file_url"
+        )
         self.last_used_url = url
         params = {
             "data": f'{{"obj_name":"{self._user_id}/{self._device_id}/{map_name}"}}'
@@ -25,7 +27,10 @@ class BaseXiaomiCloudVacuumV2(BaseXiaomiCloudVacuum, ABC):
         return url
 
     async def get_fallback_map_url(self: Self, map_name: str) -> str | None:
-        url = self._connector.get_api_url(self._server) + '/v2/home/get_interim_file_url_pro'
+        url = (
+            self._connector.get_api_url(self._server)
+            + "/v2/home/get_interim_file_url_pro"
+        )
         self.last_used_url = url
         params = {
             "data": f'{{"obj_name":"{self._user_id}/{self._device_id}/{map_name}"}}'

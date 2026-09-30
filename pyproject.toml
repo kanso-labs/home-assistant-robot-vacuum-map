@@ -43,5 +43,12 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py314"
 
+[tool.ruff.lint.per-file-ignores]
+# Upstream's connector catches whatever a cloud or device call raises and logs
+# it, and keeps naive local timestamps that it only ever compares with each
+# other. Both are deliberate there, so the rules against them are waived for the
+# connector rather than its error handling being rewritten to satisfy them.
+"custom_components/xiaomi_cloud_map/connector/**" = ["BLE001", "DTZ005", "S110"]
+
 [tool.uv]
 package = false

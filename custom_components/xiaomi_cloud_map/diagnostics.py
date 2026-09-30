@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.const import (
-    CONF_TOKEN,
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    CONF_MAC,
     CONF_HOST,
+    CONF_MAC,
     CONF_NAME,
+    CONF_PASSWORD,
+    CONF_TOKEN,
+    CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
 
@@ -16,7 +16,7 @@ from .types import XiaomiCloudMapExtractorConfigEntry
 
 
 async def async_get_config_entry_diagnostics(
-        hass: HomeAssistant, entry: XiaomiCloudMapExtractorConfigEntry
+    hass: HomeAssistant, entry: XiaomiCloudMapExtractorConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
     coordinator = entry.runtime_data.coordinator

@@ -1,14 +1,13 @@
 import logging
-from typing import Self, Any
+from typing import Any, Self
 
-from miio import DreameVacuum, DeviceException
-
+from miio import DeviceException, DreameVacuum
 from vacuum_map_parser_base.map_data import MapData
-
 from vacuum_map_parser_dreame.map_data_parser import DreameMapDataParser
-from .base.model import VacuumConfig, VacuumApi
-from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
+
 from ..utils.dict_operations import path_extractor
+from .base.model import VacuumApi, VacuumConfig
+from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +29,9 @@ class DreameCloudVacuum(BaseXiaomiCloudVacuumV2):
         )
         self._robot_stamp = 0
         self._enc_key = None
-        self._dreame_vacuum = DreameVacuum(vacuum_config.host, vacuum_config.token, model=vacuum_config.model)
+        self._dreame_vacuum = DreameVacuum(
+            vacuum_config.host, vacuum_config.token, model=vacuum_config.model
+        )
 
     @staticmethod
     def vacuum_platform() -> VacuumApi:
@@ -53,16 +54,25 @@ class DreameCloudVacuum(BaseXiaomiCloudVacuumV2):
     async def get_map_name(self: Self) -> str | None:
         if self.model in DreameMapDataParser.IVs:
             if self._robot_stamp != 0:
-                parameters = [{'piid': 2, 'value': f'{{"req_type":1,"frame_type":"I","time":{self._robot_stamp}}}'}]
+                parameters = [
+                    {
+                        "piid": 2,
+                        "value": f'{{"req_type":1,"frame_type":"I","time":{self._robot_stamp}}}',
+                    }
+                ]
             else:
-                parameters = [{'piid': 2, 'value': '{"req_type":1,"frame_type":"I"}'}]
+                parameters = [{"piid": 2, "value": '{"req_type":1,"frame_type":"I"}'}]
 
-            response = await self._connector.get_other_info(self._device_id, "action", parameters={
-                "did": self._device_id,
-                "siid": 6,
-                "aiid": 1,
-                "in": parameters,
-            })
+            response = await self._connector.get_other_info(
+                self._device_id,
+                "action",
+                parameters={
+                    "did": self._device_id,
+                    "siid": 6,
+                    "aiid": 1,
+                    "in": parameters,
+                },
+            )
 
             if response is None:
                 return None
@@ -80,7 +90,9 @@ class DreameCloudVacuum(BaseXiaomiCloudVacuumV2):
             return map_name
         else:
             try:
-                self._dreame_vacuum.call_action("map_view", params=[{'piid': 2, 'value': '{"frame_type":"I"}'}])
+                self._dreame_vacuum.call_action(
+                    "map_view", params=[{"piid": 2, "value": '{"frame_type":"I"}'}]
+                )
             except DeviceException as e:
                 _LOGGER.debug("Error while calling map_view: %s", e)
             return await super().get_map_name()

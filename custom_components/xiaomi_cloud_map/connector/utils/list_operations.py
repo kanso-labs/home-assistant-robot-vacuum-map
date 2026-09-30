@@ -1,5 +1,6 @@
 from functools import reduce
 from typing import Any
+
 from vacuum_map_parser_base.map_data import OutputObject
 
 

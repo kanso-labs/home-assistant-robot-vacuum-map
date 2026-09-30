@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from typing import Any, Coroutine
+from typing import Any
 
 from homeassistant.components.switch import (
+    DOMAIN,
     SwitchEntity,
     SwitchEntityDescription,
-    DOMAIN,
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -20,7 +20,9 @@ from .types import XiaomiCloudMapExtractorConfigEntry
 
 @dataclass(frozen=True, kw_only=True)
 class XiaomiCloudMapExtractorSwitchEntityDescription(SwitchEntityDescription):
-    set_fn: Callable[[XiaomiCloudMapExtractorDataUpdateCoordinator, bool], Coroutine[Any, Any, None]]
+    set_fn: Callable[
+        [XiaomiCloudMapExtractorDataUpdateCoordinator, bool], Coroutine[Any, Any, None]
+    ]
     is_on_fn: Callable[[XiaomiCloudMapExtractorDataUpdateCoordinator], bool]
 
 
@@ -38,9 +40,9 @@ SWITCH_TYPES: tuple[XiaomiCloudMapExtractorSwitchEntityDescription, ...] = (
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: XiaomiCloudMapExtractorConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: XiaomiCloudMapExtractorConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = config_entry.runtime_data.coordinator
 
@@ -54,10 +56,10 @@ class XiaomiCloudMapExtractorSwitchEntity(XiaomiCloudMapExtractorEntity, SwitchE
     entity_description: XiaomiCloudMapExtractorSwitchEntityDescription
 
     def __init__(
-            self,
-            coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
-            config_entry: XiaomiCloudMapExtractorConfigEntry,
-            description: XiaomiCloudMapExtractorSwitchEntityDescription,
+        self,
+        coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator,
+        config_entry: XiaomiCloudMapExtractorConfigEntry,
+        description: XiaomiCloudMapExtractorSwitchEntityDescription,
     ) -> None:
         super().__init__(coordinator, config_entry, DOMAIN, description.key)
 

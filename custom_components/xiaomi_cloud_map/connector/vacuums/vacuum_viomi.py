@@ -1,7 +1,8 @@
 from typing import Self
 
 from vacuum_map_parser_viomi.map_data_parser import ViomiMapDataParser
-from .base.model import VacuumConfig, VacuumApi
+
+from .base.model import VacuumApi, VacuumConfig
 from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
 
 
@@ -15,7 +16,7 @@ class ViomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             vacuum_config.sizes,
             vacuum_config.drawables,
             vacuum_config.image_config,
-            vacuum_config.texts
+            vacuum_config.texts,
         )
 
     @staticmethod

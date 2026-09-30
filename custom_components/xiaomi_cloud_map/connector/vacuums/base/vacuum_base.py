@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Self, Any
+from typing import Any, Self
 
 from vacuum_map_parser_base.config.color import ColorsPalette
 from vacuum_map_parser_base.config.drawable import Drawable
@@ -10,9 +10,9 @@ from vacuum_map_parser_base.config.text import Text
 from vacuum_map_parser_base.map_data import MapData
 from vacuum_map_parser_base.map_data_parser import MapDataParser
 
-from .model import VacuumConfig, VacuumApi
 from ...utils.exceptions import FailedMapDownloadException, FailedMapParseException
 from ...xiaomi_cloud.connector import XiaomiCloudConnector
+from .model import VacuumApi, VacuumConfig
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,16 +74,20 @@ class BaseXiaomiCloudVacuum(ABC):
     async def get_map(self: Self) -> tuple[MapData, bytes]:
         _LOGGER.debug("Getting map name...")
         map_name = await self.get_map_name()
-        _LOGGER.debug("Got map name: \"%s\".", map_name)
+        _LOGGER.debug('Got map name: "%s".', map_name)
         _LOGGER.debug("Downloading map...")
         raw_map_data = await self.get_raw_map_data(map_name)
         if raw_map_data is None:
             _LOGGER.error("FailedMapDownloadException")
             raise FailedMapDownloadException()
-        _LOGGER.debug("Downloaded raw map: \"%d\".", len(raw_map_data))
+        _LOGGER.debug('Downloaded raw map: "%d".', len(raw_map_data))
         _LOGGER.debug("Parsing map...")
         map_data = self.decode_and_parse(raw_map_data)
-        _LOGGER.debug("Parsed map: (%d x %d)", map_data.image.dimensions.height, map_data.image.dimensions.width)
+        _LOGGER.debug(
+            "Parsed map: (%d x %d)",
+            map_data.image.dimensions.height,
+            map_data.image.dimensions.width,
+        )
         if map_data is not None:
             map_data.map_name = map_name
         else:

@@ -18,5 +18,7 @@ class Backoff:
         self._sleep = self._min_sleep
 
     def _get_sleep_time(self: Self) -> float:
-        self._sleep = min(self._max_sleep, random.uniform(self._min_sleep, self._sleep * 3))
+        self._sleep = min(
+            self._max_sleep, random.uniform(self._min_sleep, self._sleep * 3)
+        )
         return self._sleep

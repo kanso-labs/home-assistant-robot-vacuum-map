@@ -1,23 +1,23 @@
 import logging
-from typing import Self, Any
+from typing import Any, ClassVar, Self
 
-from miio.miot_device import MiotDevice
 from miio.exceptions import DeviceException
+from miio.miot_device import MiotDevice
 from vacuum_map_parser_base.map_data import MapData
+from vacuum_map_parser_ijai.aes_decryptor import gen_md5_key
 from vacuum_map_parser_ijai.map_data_parser import IjaiMapDataParser
 from vacuum_map_parser_ijai.status_mapping import get_status_mapping
-from vacuum_map_parser_ijai.aes_decryptor import gen_md5_key
 
-from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
-from .base.model import VacuumConfig, VacuumApi
 from ..utils.exceptions import FailedConnectionException
+from .base.model import VacuumApi, VacuumConfig
+from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
 
 _LOGGER = logging.getLogger(__name__)
 OFF_UPDATES = 3
 
 
 class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
-    WIFI_INFO_SN_POSSIBLE_LEN = [18, 20]
+    WIFI_INFO_SN_POSSIBLE_LEN: ClassVar[list[int]] = [18, 20]
 
     def __init__(self, vacuum_config: VacuumConfig):
         super().__init__(vacuum_config)
@@ -33,7 +33,7 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
             vacuum_config.sizes,
             vacuum_config.drawables,
             vacuum_config.image_config,
-            vacuum_config.texts
+            vacuum_config.texts,
         )
 
         self._status_mapping = get_status_mapping(self.model)
@@ -42,13 +42,15 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
     @property
     def should_update_map(self: Self) -> bool:
         try:
-            status_value = self._miot_device.get_property_by(self._status_mapping.siid,
-                                                             self._status_mapping.piid)[0]["value"]
+            status_value = self._miot_device.get_property_by(
+                self._status_mapping.siid, self._status_mapping.piid
+            )[0]["value"]
 
             if status_value in self._status_mapping.idle_at:
                 self._off_counter += 1
                 _LOGGER.debug(
-                    "Vacuum is not moving. Off counter: %d", self._off_counter)
+                    "Vacuum is not moving. Off counter: %d", self._off_counter
+                )
                 return self._off_counter <= OFF_UPDATES
             else:
                 self._off_counter = 0
@@ -94,16 +96,17 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
             # property 7, 45 (sweep -> multi-prop-vacuum) on all miot vacuums
             got_from_vacuum = self._miot_device.get_property_by(7, 45)
 
-            for prop in got_from_vacuum[0]["value"].split(','):
-                cleaned_prop = str(prop).replace('"', '')
+            for prop in got_from_vacuum[0]["value"].split(","):
+                cleaned_prop = str(prop).replace('"', "")
 
                 if str(self._user_id) in cleaned_prop:
-                    cleaned_prop = cleaned_prop.split(';')[0]
+                    cleaned_prop = cleaned_prop.split(";")[0]
 
                 if (
-                        len(cleaned_prop) in self.WIFI_INFO_SN_POSSIBLE_LEN
-                        and cleaned_prop.isalnum()
-                        and cleaned_prop.isupper()):
+                    len(cleaned_prop) in self.WIFI_INFO_SN_POSSIBLE_LEN
+                    and cleaned_prop.isalnum()
+                    and cleaned_prop.isupper()
+                ):
                     wifi_info_sn = cleaned_prop
         return wifi_info_sn
 
@@ -126,12 +129,19 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
             owner_id=str(self._user_id),
             device_id=str(self._device_id),
             model=self.model,
-            device_mac=self._mac)
+            device_mac=self._mac,
+        )
         return self.map_data_parser.parse(decoded_map)
 
     def additional_data(self: Self) -> dict[str, Any]:
         super_data = super().additional_data()
         if self._wifi_info_sn is None:
             return super_data
-        enc_key = gen_md5_key(self._wifi_info_sn, str(self._user_id), str(self._device_id), self.model, self._mac)
+        enc_key = gen_md5_key(
+            self._wifi_info_sn,
+            str(self._user_id),
+            str(self._device_id),
+            self.model,
+            self._mac,
+        )
         return {**super_data, "enc_key": enc_key}
