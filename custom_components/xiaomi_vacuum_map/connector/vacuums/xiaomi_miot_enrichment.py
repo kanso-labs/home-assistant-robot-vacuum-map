@@ -1,11 +1,12 @@
 """Live map data a Xiaomi vacuum publishes as MIoT properties, not in its map.
 
 The Xiaomi Robot Vacuum S20+ (xiaomi.vacuum.b108gl) keeps its rooms, its dock
-and its calibration in the cloud map, but not the robot or its path: it
-publishes its position as MIoT property 7-4, and names a trajectory object in
-the cloud as property 7-2. The functions here merge those into the map's JSON
-payload, in the shape vacuum_map_parser_xiaomi reads, before the parser draws
-it.
+and its calibration in the cloud map, but not the robot, its path, or the
+restricted areas and walls set in the Xiaomi app: it publishes its position as
+MIoT property 7-4, names a trajectory object in the cloud as property 7-2, and
+publishes the areas and walls as properties 2-11 and 2-12. The functions here
+merge those into the map's JSON payload, in the shape vacuum_map_parser_xiaomi
+reads, before the parser draws it.
 
 Ported from xiaomi_miot_enrichment.py in upstream pull request #750, by almirus.
 """
@@ -36,6 +37,26 @@ MAX_TRAJECTORY_COORDINATE = 1_000_000
 # millimetres, and a run shorter than MIN_MOP_RUN_POINTS is not drawn.
 MAX_MOP_RUN_GAP = 500
 MIN_MOP_RUN_POINTS = 3
+
+# The keys an object may list restricted areas or walls under, and the keys a
+# region may list its points under, as upstream pull request #750 reads them.
+_REGION_LIST_KEYS = (
+    "areas",
+    "zones",
+    "regions",
+    "walls",
+    "restricted_areas",
+    "restricted_walls",
+    "value",
+)
+_POINT_LIST_KEYS = (
+    "points",
+    "area_points",
+    "region_points",
+    "wall_points",
+    "coordinates",
+    "vertices",
+)
 
 
 def parse_vacuum_position(value: Any) -> dict[str, Any] | None:
@@ -172,6 +193,31 @@ def with_path(payload: dict[str, Any], points: list[dict[str, Any]]) -> dict[str
     return {**payload, "paths": [{"x": p["x"], "y": p["y"]} for p in points]}
 
 
+def with_restricted_regions(
+    payload: dict[str, Any], areas: Any, walls: Any
+) -> dict[str, Any]:
+    """Return the map payload with the restricted areas and walls in it.
+
+    They go into "fb_regions", the forbidden regions vacuum_map_parser_xiaomi
+    draws, after any the map carries itself. Each area becomes a no-go region
+    of four corners, and each wall a region of type "wall", whose ends the
+    parser reads from its first and third points. With nothing to add, the
+    payload comes back as it was.
+    """
+    regions = [
+        {"type": "no_go", "points": corners} for corners in _regions(areas, 4)
+    ] + [
+        {"type": "wall", "points": [ends[0], ends[0], ends[1], ends[1]]}
+        for ends in _regions(walls, 2)
+    ]
+    if not regions:
+        return payload
+    existing = payload.get("fb_regions")
+    if not isinstance(existing, list):
+        existing = []
+    return {**payload, "fb_regions": [*existing, *regions]}
+
+
 def mop_runs(points: list[dict[str, Any]]) -> list[list[Point]]:
     """Split the mopped points into the runs the robot mopped them in.
 
@@ -226,6 +272,104 @@ def _decompress_trajectory(raw: bytes) -> bytes:
         if payload[:1] in (bytes([TRAJECTORY_POINT]), bytes([TRAJECTORY_MOP_POINT])):
             return payload
         return b""
+
+
+def _regions(value: Any, corners: int) -> list[list[dict[str, float]]]:
+    """The points of each region a restricted area or wall property lists."""
+    return [
+        points
+        for item in _region_items(value, corners)
+        if (points := _region_points(item, corners)) is not None
+    ]
+
+
+def _region_items(value: Any, corners: int) -> list[Any]:
+    """Split a property's value into one item per region.
+
+    The value may be JSON text, a list of regions, one flat list of numbers
+    holding them all, or an object listing them under one of
+    _REGION_LIST_KEYS. An object that lists none stands for one region itself.
+    """
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+    if isinstance(value, dict):
+        for key in _REGION_LIST_KEYS:
+            if key in value and (items := _region_items(value[key], corners)):
+                return items
+        return [value]
+    if isinstance(value, list):
+        size = corners * 2
+        if value and len(value) % size == 0 and _pairs(value) is not None:
+            return [value[index : index + size] for index in range(0, len(value), size)]
+        return value
+    return []
+
+
+def _region_points(item: Any, corners: int) -> list[dict[str, float]] | None:
+    """Read one region into its points, or None without `corners` of them.
+
+    A region is an object with its points as x0, y0, x1, y1 and so on, an
+    area's two opposite corners as x1, y1, x2, y2, or its points under one of
+    _POINT_LIST_KEYS. Or it is a list, of the points or of their coordinates
+    one after another.
+    """
+    if isinstance(item, dict):
+        keys = [f"{axis}{index}" for index in range(corners) for axis in "xy"]
+        if all(key in item for key in keys):
+            return _pairs([item[key] for key in keys])
+        if corners == 4 and all(key in item for key in ("x1", "y1", "x2", "y2")):
+            x1, y1, x2, y2 = (_number(item[key]) for key in ("x1", "y1", "x2", "y2"))
+            if None in (x1, y1, x2, y2):
+                return None
+            return [
+                {"x": x1, "y": y1},
+                {"x": x2, "y": y1},
+                {"x": x2, "y": y2},
+                {"x": x1, "y": y2},
+            ]
+        for key in _POINT_LIST_KEYS:
+            if key in item and (points := _region_points(item[key], corners)):
+                return points
+        return None
+    if not isinstance(item, (list, tuple)):
+        return None
+    if len(item) == corners * 2 and (points := _pairs(item)) is not None:
+        return points
+    points = [_point(value) for value in item[:corners]]
+    if len(points) < corners or None in points:
+        return None
+    return points
+
+
+def _point(value: Any) -> dict[str, float] | None:
+    if isinstance(value, dict):
+        x = _number(_first(value, "x", "pos_x", "x0"))
+        y = _number(_first(value, "y", "pos_y", "y0"))
+    elif isinstance(value, (list, tuple)) and len(value) >= 2:
+        x, y = _number(value[0]), _number(value[1])
+    else:
+        return None
+    if x is None or y is None:
+        return None
+    return {"x": x, "y": y}
+
+
+def _pairs(values: list[Any]) -> list[dict[str, float]] | None:
+    """Read coordinates listed one after another into points."""
+    numbers = [_number(value) for value in values]
+    if len(numbers) % 2 or None in numbers:
+        return None
+    return [{"x": x, "y": y} for x, y in zip(numbers[::2], numbers[1::2])]
+
+
+def _number(value: Any) -> float | None:
+    try:
+        return float(value)
+    except TypeError, ValueError:
+        return None
 
 
 def _first(data: dict[str, Any], *keys: str) -> Any:

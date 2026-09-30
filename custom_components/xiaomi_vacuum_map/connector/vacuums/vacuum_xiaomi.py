@@ -29,6 +29,7 @@ from .xiaomi_miot_enrichment import (
     parse_vacuum_position,
     place_vacuum,
     with_path,
+    with_restricted_regions,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -74,6 +75,12 @@ class XiaomiVacuumLiveMapping:
 
     # status values meaning the vacuum is on its dock
     docked_at: tuple[int, ...]
+
+    # restricted sweep areas property, as service id and property id
+    restricted_areas: tuple[int, int]
+
+    # restricted walls property, as service id and property id
+    restricted_walls: tuple[int, int]
 
 
 _NON_STANDARD_MAP_PROP = [
@@ -126,18 +133,24 @@ _NON_STANDARD_STATUS_PROP = [
     ),
 ]
 
-# Vacuums whose cloud map leaves the robot and its path out. The b108gl
-# publishes its position as property 7-4, about every two seconds while it
-# cleans, names its trajectory object as property 7-2, a new one every couple of
-# seconds, and is on its dock while Charging (2), BreakCharging (3) or Charged
-# (8).
+# Vacuums whose cloud map leaves the robot, its path, and its restricted areas
+# and walls out. The b108gl publishes its position as property 7-4, about every
+# two seconds while it cleans, names its trajectory object as property 7-2, a
+# new one every couple of seconds, publishes the no-go areas and virtual walls
+# set in the Xiaomi app as 2-11 and 2-12, and is on its dock while Charging (2),
+# BreakCharging (3) or Charged (8).
 _LIVE_MAP_PROP = [
     (
         [
             "xiaomi.vacuum.b108gl",
         ],
         XiaomiVacuumLiveMapping(
-            siid=7, position_piid=4, trajectory_piid=2, docked_at=(2, 3, 8)
+            siid=7,
+            position_piid=4,
+            trajectory_piid=2,
+            docked_at=(2, 3, 8),
+            restricted_areas=(2, 11),
+            restricted_walls=(2, 12),
         ),
     ),
 ]
@@ -253,7 +266,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             # Back on the dock, the trajectory is the last clean's.
             return []
         name = cloud_object_name(
-            self._get_live_property(self._live_map.trajectory_piid)
+            self._get_live_property(self._live_map.siid, self._live_map.trajectory_piid)
         )
         if name is None:
             return []
@@ -292,11 +305,16 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if not isinstance(payload, dict):
             return decoded_map
 
+        payload = with_restricted_regions(
+            with_path(payload, self._trajectory),
+            self._get_live_property(*self._live_map.restricted_areas),
+            self._get_live_property(*self._live_map.restricted_walls),
+        )
         position = parse_vacuum_position(
-            self._get_live_property(self._live_map.position_piid)
+            self._get_live_property(self._live_map.siid, self._live_map.position_piid)
         )
         return place_vacuum(
-            with_path(payload, self._trajectory),
+            payload,
             position,
             docked=self._status_value in self._live_map.docked_at,
             path=self._trajectory,
@@ -358,15 +376,11 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if rotation in _ROTATE:
             image.data = image.data.transpose(_ROTATE[rotation])
 
-    def _get_live_property(self: Self, piid: int) -> Any:
+    def _get_live_property(self: Self, siid: int, piid: int) -> Any:
         try:
-            return self._miot_device.get_property_by(self._live_map.siid, piid)[0].get(
-                "value"
-            )
+            return self._miot_device.get_property_by(siid, piid)[0].get("value")
         except DeviceException as de:
-            _LOGGER.debug(
-                "Failed to read MIoT property %d-%d: %s", self._live_map.siid, piid, de
-            )
+            _LOGGER.debug("Failed to read MIoT property %d-%d: %s", siid, piid, de)
             return None
 
     def additional_data(self: Self) -> dict[str, Any]:

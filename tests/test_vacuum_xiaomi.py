@@ -379,3 +379,39 @@ async def test_b108gl_draws_mop_runs_over_the_path_at_every_rotation(
 
     assert mop_pixels
     assert mop_pixels <= path_pixels
+
+
+AREA = "[[100, 100, 400, 100, 400, 300, 100, 300]]"
+WALL = "[[500, 100, 500, 800]]"
+
+
+def test_b108gl_draws_the_areas_and_walls_from_2_11_and_2_12() -> None:
+    """The no-go areas and virtual walls set in the Xiaomi app are drawn."""
+
+    def parsed(areas: Any, walls: Any):
+        vacuum = make_vacuum(B108GL)
+        stub_device(vacuum, {(2, 1): CHARGED, (2, 11): areas, (2, 12): walls})
+        assert vacuum.should_update_map
+        return parse(vacuum, json_map())
+
+    map_data = parsed(AREA, WALL)
+
+    assert [area.as_list() for area in map_data.no_go_areas] == [
+        [100, 100, 400, 100, 400, 300, 100, 300]
+    ]
+    assert [wall.as_list() for wall in map_data.walls] == [[500, 100, 500, 800]]
+    assert map_data.image.data.tobytes() != parsed(None, None).image.data.tobytes()
+
+
+def test_b108gl_drops_areas_and_walls_once_removed() -> None:
+    """An area or wall removed in the Xiaomi app is gone at the next refresh."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(2, 1): SWEEPING, (2, 11): AREA, (2, 12): WALL})
+    assert vacuum.should_update_map
+    parse(vacuum, json_map())
+    stub_device(vacuum, {(2, 1): SWEEPING, (2, 11): "[]", (2, 12): ""})
+
+    map_data = parse(vacuum, json_map())
+
+    assert map_data.no_go_areas == []
+    assert map_data.walls == []
