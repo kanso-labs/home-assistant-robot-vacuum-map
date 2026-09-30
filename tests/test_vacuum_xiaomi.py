@@ -577,6 +577,8 @@ async def test_b108gl_puts_the_robot_on_the_captured_dock_once_charged() -> None
     assert [call.args for call in download.await_args_list] == [("3",)]
     assert map_data.path is None
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (200, 134)
+    # The dock's pile_yaw, 1753, is 100.4 degrees in milliradians.
+    assert map_data.vacuum_position.a == pytest.approx(math.degrees(1.753))
 
 
 class FakeXiaomiHome:
