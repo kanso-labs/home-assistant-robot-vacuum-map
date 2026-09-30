@@ -4,6 +4,7 @@ import hmac
 import json
 import os
 import random
+from typing import Any
 
 from Crypto.Cipher import ARC4
 
@@ -74,6 +75,62 @@ def generate_enc_params(
 
 def to_json(response_text: str) -> any:
     return json.loads(response_text.replace("&&&START&&&", ""))
+
+
+# The keys whose values in Xiaomi's login requests and responses give the
+# session away: its secrets, the signatures a login is built on, and the URLs
+# that carry either in their query.
+_SECRET_KEYS = frozenset(
+    {
+        "_sign",
+        "clientSign",
+        "context",
+        "ick",
+        "location",
+        "loginUrl",
+        "lp",
+        "nonce",
+        "notificationUrl",
+        "passToken",
+        "psecurity",
+        "qr",
+        "serviceToken",
+        "ssecurity",
+        "ticket",
+    }
+)
+REDACTED = "**REDACTED**"
+
+
+def redacted(value: Any) -> Any:
+    """A login request or response, as it may be logged.
+
+    JSON text and dictionaries keep their shape, with the secret values
+    masked. Any other text is logged only by its length, since a page can
+    carry the same secrets.
+    """
+    if isinstance(value, str):
+        try:
+            value = to_json(value)
+        except ValueError:
+            return f"<{len(value)} characters>"
+    return _masked(value)
+
+
+def _masked(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: REDACTED if key in _SECRET_KEYS else _masked(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_masked(item) for item in value]
+    return value
+
+
+def without_query(url: Any) -> Any:
+    """A URL as it may be logged: its query carries signatures and tokens."""
+    return str(url).split("?", 1)[0] if url else url
 
 
 def encrypt_rc4(password: str, payload: str) -> str:
