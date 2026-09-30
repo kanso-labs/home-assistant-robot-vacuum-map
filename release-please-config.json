@@ -26,6 +26,7 @@
         }
       ],
       "include-component-in-tag": false,
+      "initial-version": "0.1.0",
       "release-type": "simple"
     }
   }
