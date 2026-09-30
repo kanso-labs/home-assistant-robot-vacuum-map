@@ -1,5 +1,9 @@
 # Xiaomi Vacuum Map
 
+[![Lint][lint-shield]][lint-workflow] [![Test][test-shield]][test-workflow]
+[![Release][release-shield]][release] [![HACS][hacs-shield]][hacs]
+[![License][license-shield]](./LICENSE.md)
+
 A Home Assistant integration that draws a live map of your robot vacuum from
 Xiaomi's cloud, with no rooting. It reads Xiaomi, Roborock, Dreame, Viomi,
 Roidmi and iJai vacuums.
@@ -18,11 +22,14 @@ It needs Home Assistant 2026.3 or later, and [HACS](https://hacs.xyz/).
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kanso-labs&repository=home-assistant-xiaomi-vacuum-map&category=integration)
 
-1. Open the link above. Or, in HACS, choose **Custom repositories** from the
-   menu and add `https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map`
-   as an **Integration**.
-2. Download **Xiaomi Vacuum Map**.
-3. Restart Home Assistant.
+Or add it by hand, from **HACS → ⋮ → Custom repositories**, as an
+**Integration**:
+
+```text
+https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map
+```
+
+Then download **Xiaomi Vacuum Map** and restart Home Assistant.
 
 ## Configuration
 
@@ -79,18 +86,60 @@ logger:
     custom_components.xiaomi_vacuum_map: debug
 ```
 
-The diagnostics download on the integration's device holds the last map's data,
-with the credentials, token, address and MAC removed.
+The diagnostics download on the integration's device holds the last map, both as
+downloaded and as parsed, with the credentials, token, address and MAC removed.
+For a vacuum on the Xiaomi map API it also holds the last value read from each
+MIoT property, and for the Xiaomi Robot Vacuum S20+ the last trajectory
+downloaded, with the account and device IDs taken out of object names.
 
 ## Development
 
-`mise install` puts the pinned Python and uv on the path. Then `uv run pytest`
-runs the tests, `uv run ruff check` and `uv run ruff format` lint and format the
-Python, and `npx prettier --write .` formats everything else. `AGENTS.md` has
-the rest: the conventions, how releases are cut, and how changes come in from
-upstream.
+Fork, then clone the repository:
 
-## Credits
+```shell
+git clone https://github.com/your-username/home-assistant-xiaomi-vacuum-map.git
+```
+
+`mise install` puts the Python and uv that [`.tool-versions`](.tool-versions)
+pins on the path.
+
+### The commands CI runs
+
+CI runs these four on every pull request, and each runs the same locally:
+
+```shell
+uv run ruff format --check  # Python formatting
+uv run ruff check           # Python lint
+uv run pytest               # the tests, against Home Assistant 2026.9.4
+npx prettier --check .      # YAML, JSON and Markdown
+```
+
+CI also validates the integration with hassfest and HACS, and lints the
+workflows. [AGENTS.md](./AGENTS.md) has the command that runs hassfest locally;
+HACS reads the repository through the GitHub API, so it runs only in CI.
+
+## Contributing
+
+Issues and pull requests are welcome. The organization's contributing guide
+lives in
+[kanso-labs/.github](https://github.com/kanso-labs/.github/blob/main/CONTRIBUTING.md)
+and covers how to report, propose and submit.
+
+[AGENTS.md](./AGENTS.md) is the working reference for anything specific to this
+repository: its layout, how releases reach an installed instance, how changes
+come in from upstream, and the traps that have already caught someone. It is
+written for people and coding agents alike.
+
+Participation is governed by the
+[code of conduct](https://github.com/kanso-labs/.github/blob/main/CODE_OF_CONDUCT.md).
+
+## License
+
+This integration is MIT licensed. See [LICENSE.md](./LICENSE.md), which keeps
+Piotr Machowski's copyright notice beside Kanso Labs', as the licence requires
+of a copy.
+
+It is built on others' work:
 
 - [Piotr Machowski](https://github.com/PiotrMachowski), for the
   [Xiaomi Cloud Map Extractor](https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor)
@@ -108,7 +157,18 @@ upstream.
   [Valetudo](https://github.com/Hypfer/Valetudo) by
   [@Hypfer](https://github.com/Hypfer).
 
-## License
-
-MIT, in [`LICENSE.md`](LICENSE.md), which keeps upstream's copyright notice
-beside this repository's.
+[hacs]: https://hacs.xyz/docs/faq/custom_repositories/
+[hacs-shield]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
+[license-shield]: https://img.shields.io/badge/license-MIT-blue.svg
+[lint-shield]:
+  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/lint.yaml/badge.svg
+[lint-workflow]:
+  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/lint.yaml
+[release]:
+  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/releases/latest
+[release-shield]:
+  https://img.shields.io/github/v/release/kanso-labs/home-assistant-xiaomi-vacuum-map
+[test-shield]:
+  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/test.yaml/badge.svg
+[test-workflow]:
+  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/test.yaml
