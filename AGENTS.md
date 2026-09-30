@@ -135,10 +135,10 @@ The organization's runner in
 [`kanso-labs/renovate`](https://github.com/kanso-labs/renovate) manages this
 repository, and `.github/renovate.json` shapes what it opens:
 
-- **`manifest.json`'s requirements** are found by a regex manager of their own,
-  since no Renovate manager reads a Home Assistant manifest. They are typed
-  `fix`, and each lands in one pull request with its `pyproject.toml` twin,
-  because Renovate names the branch after the package.
+- **`manifest.json`'s requirements** are read by Renovate's own
+  `homeassistant-manifest` manager, which skips Pillow for carrying no version.
+  They are typed `fix`, and each lands in one pull request with its
+  `pyproject.toml` twin, because Renovate names the branch after the package.
 - **The hassfest image, `homeassistant` and
   `pytest-homeassistant-custom-component`** move together, in one "Home
   Assistant" pull request. The hassfest image is held to release tags.
