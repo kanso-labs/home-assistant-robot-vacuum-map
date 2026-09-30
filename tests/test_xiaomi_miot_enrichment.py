@@ -16,6 +16,7 @@ from custom_components.xiaomi_vacuum_map.connector.vacuums.xiaomi_miot_enrichmen
     parse_vacuum_position,
     place_vacuum,
     with_path,
+    with_restricted_regions,
 )
 
 DOCK = {"have_pile": 1, "pile_x": 150, "pile_y": 250, "pile_yaw": 9000}
@@ -222,3 +223,124 @@ def test_splits_mop_runs_across_a_gap() -> None:
 def test_drops_mop_runs_too_short_to_draw() -> None:
     """A run of fewer than three points is not drawn."""
     assert mop_runs(mopped(0, 100) + swept(200) + mopped(300)) == []
+
+
+CORNERS = [
+    {"x": 100, "y": 100},
+    {"x": 400, "y": 100},
+    {"x": 400, "y": 300},
+    {"x": 100, "y": 300},
+]
+# A wall from (500, 100) to (500, 800), each end twice, as the parser reads a
+# wall's ends from its first and third points.
+WALL_POINTS = [
+    {"x": 500, "y": 100},
+    {"x": 500, "y": 100},
+    {"x": 500, "y": 800},
+    {"x": 500, "y": 800},
+]
+
+
+@pytest.mark.parametrize(
+    "areas",
+    [
+        "[[100, 100, 400, 100, 400, 300, 100, 300]]",
+        [100, 100, 400, 100, 400, 300, 100, 300],
+        [[[100, 100], [400, 100], [400, 300], [100, 300]]],
+        [{"points": [[100, 100], [400, 100], [400, 300], [100, 300]]}],
+        [
+            {
+                "vertices": [
+                    {"x": 100, "y": 100},
+                    {"x": 400, "y": 100},
+                    {"x": 400, "y": 300},
+                    {"x": 100, "y": 300},
+                ]
+            }
+        ],
+        [
+            {
+                "x0": 100,
+                "y0": 100,
+                "x1": 400,
+                "y1": 100,
+                "x2": 400,
+                "y2": 300,
+                "x3": 100,
+                "y3": 300,
+            }
+        ],
+        [{"x1": 100, "y1": 100, "x2": 400, "y2": 300}],
+        {"areas": [[100, 100, 400, 100, 400, 300, 100, 300]]},
+        '{"value": "[[100, 100, 400, 100, 400, 300, 100, 300]]"}',
+    ],
+)
+def test_reads_each_form_of_a_restricted_area(areas) -> None:
+    """The property's JSON, list and object forms of an area read the same."""
+    payload = with_restricted_regions({}, areas, None)
+
+    assert payload["fb_regions"] == [{"type": "no_go", "points": CORNERS}]
+
+
+@pytest.mark.parametrize(
+    "walls",
+    [
+        "[[500, 100, 500, 800]]",
+        [500, 100, 500, 800],
+        [[[500, 100], [500, 800]]],
+        [{"points": [{"x": 500, "y": 100}, {"x": 500, "y": 800}]}],
+        [{"x0": 500, "y0": 100, "x1": 500, "y1": 800}],
+        {"walls": [[500, 100, 500, 800]]},
+    ],
+)
+def test_reads_each_form_of_a_wall(walls) -> None:
+    """The property's JSON, list and object forms of a wall read the same."""
+    payload = with_restricted_regions({}, None, walls)
+
+    assert payload["fb_regions"] == [{"type": "wall", "points": WALL_POINTS}]
+
+
+def test_reads_every_region_a_property_lists() -> None:
+    """Several areas and walls come through in the order listed."""
+    payload = with_restricted_regions(
+        {},
+        [100, 100, 400, 100, 400, 300, 100, 300, 0, 0, 50, 0, 50, 50, 0, 50],
+        "[[500, 100, 500, 800], [0, 0, 0, 900]]",
+    )
+
+    assert [region["type"] for region in payload["fb_regions"]] == [
+        "no_go",
+        "no_go",
+        "wall",
+        "wall",
+    ]
+
+
+def test_skips_a_region_it_cannot_read() -> None:
+    """A region with too few points or no numbers is left out, not the rest."""
+    payload = with_restricted_regions(
+        {}, [[100, 100, 400, 100, 400, 300, 100, 300], "a", [1, 2], {"x1": "a"}], None
+    )
+
+    assert payload["fb_regions"] == [{"type": "no_go", "points": CORNERS}]
+
+
+@pytest.mark.parametrize(
+    "value", [None, "", "  ", "[]", "{}", "not json", 42, "[1, 2, 3]", [[1, 2]]]
+)
+def test_reads_no_regions_from_what_lists_none(value) -> None:
+    """Nothing that lists a region leaves the payload as it was."""
+    payload = {"width": 20}
+
+    assert with_restricted_regions(payload, value, value) is payload
+
+
+def test_keeps_the_regions_the_map_carries() -> None:
+    """Regions from 2-11 and 2-12 go in after any the map has of its own."""
+    carried = {"type": "no_mop", "points": CORNERS}
+
+    payload = with_restricted_regions(
+        {"fb_regions": [carried]}, None, "[[500, 100, 500, 800]]"
+    )
+
+    assert payload["fb_regions"] == [carried, {"type": "wall", "points": WALL_POINTS}]
