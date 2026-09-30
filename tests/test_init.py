@@ -9,7 +9,10 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.robot_vacuum_map.const import DOMAIN
-from custom_components.robot_vacuum_map.xiaomi_home import XIAOMI_HOME_DOMAIN
+from custom_components.robot_vacuum_map.xiaomi_home import (
+    XIAOMI_HOME_DOMAIN,
+    XiaomiHomeProperties,
+)
 
 
 async def test_setup_and_unload(
@@ -29,6 +32,9 @@ async def test_setup_and_unload(
     )
     assert device is not None
     assert device.via_device_id is None
+    assert (
+        config_entry.runtime_data.coordinator.connector._config.live_properties is None
+    )
     entities = er.async_entries_for_config_entry(
         er.async_get(hass), config_entry.entry_id
     )
@@ -62,3 +68,5 @@ async def test_connects_the_map_via_xiaomi_home_s_vacuum(
     )
     assert device.via_device_id == vacuum.id
     assert device.id != vacuum.id
+    connector_config = config_entry.runtime_data.coordinator.connector._config
+    assert isinstance(connector_config.live_properties, XiaomiHomeProperties)

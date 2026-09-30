@@ -83,6 +83,14 @@ class XiaomiVacuumLiveMapping:
     # restricted walls property, as service id and property id
     restricted_walls: tuple[int, int]
 
+    # the status each vacuum activity stands for, when a live source reports
+    # the activity rather than the status
+    status_by_activity: dict[str, int]
+
+    # the status for a robot a live source calls idle while it moves, which is
+    # how a robot driven by remote control reads
+    status_while_moved: int
+
 
 _NON_STANDARD_MAP_PROP = [
     (
@@ -152,6 +160,17 @@ _LIVE_MAP_PROP = [
             docked_at=(2, 3, 8),
             restricted_areas=(2, 11),
             restricted_walls=(2, 12),
+            # As Xiaomi Home's vacuum entity reports the b108gl's statuses: Remote
+            # (7) reads as idle, and BreakCharging (3), on the dock, as an error.
+            status_by_activity={
+                "cleaning": 4,
+                "returning": 6,
+                "paused": 5,
+                "docked": 2,
+                "error": 3,
+                "idle": 1,
+            },
+            status_while_moved=7,
         ),
     ),
 ]
@@ -190,6 +209,10 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         # last trajectory object downloaded, both kept for diagnostics.
         self._property_values: dict[str, Any] = {}
         self._raw_trajectory: bytes | None = None
+        # Where the live properties come from before the vacuum is asked, and
+        # the last position read from there.
+        self._live_properties = vacuum_config.live_properties
+        self._last_live_position: Any = None
 
         self._vacuum_map = next(
             (
@@ -207,9 +230,11 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     @property
     def should_update_map(self: Self) -> bool:
         try:
-            status_value = self._miot_device.get_property_by(
-                self._status_mapping.siid, self._status_mapping.piid
-            )[0]["value"]
+            status_value = self._live_status()
+            if status_value is None:
+                status_value = self._miot_device.get_property_by(
+                    self._status_mapping.siid, self._status_mapping.piid
+                )[0]["value"]
             self._status_value = status_value
             self._remember(
                 self._status_mapping.siid, self._status_mapping.piid, status_value
@@ -242,9 +267,11 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         return self._xiaomi_map_data_parser
 
     async def get_map_name(self: Self) -> str:
-        response = self._miot_device.get_property_by(
-            self._vacuum_map.siid, self._vacuum_map.piid
-        )[0].get("value")
+        response = self._live_value(self._vacuum_map.siid, self._vacuum_map.piid)
+        if response is None:
+            response = self._miot_device.get_property_by(
+                self._vacuum_map.siid, self._vacuum_map.piid
+            )[0].get("value")
         self._remember(self._vacuum_map.siid, self._vacuum_map.piid, response)
 
         if response is None:
@@ -389,7 +416,43 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if rotation in _ROTATE:
             image.data = image.data.transpose(_ROTATE[rotation])
 
+    def _live_status(self: Self) -> int | None:
+        """The status as the live source tells it, or None to ask the vacuum.
+
+        The source reports the vacuum's activity, which the live mapping turns
+        back into a status. It reads a robot driven by remote control as idle,
+        so an idle robot whose position moved since the last poll counts as
+        moving, which keeps the map refreshing.
+        """
+        if self._live_properties is None or self._live_map is None:
+            return None
+        status = self._live_map.status_by_activity.get(self._live_properties.activity())
+        if status is None:
+            return None
+        position = self._live_properties.value(
+            self._live_map.siid, self._live_map.position_piid
+        )
+        moved = (
+            position is not None
+            and self._last_live_position is not None
+            and position != self._last_live_position
+        )
+        if position is not None:
+            self._last_live_position = position
+        if moved and status == self._live_map.status_by_activity.get("idle"):
+            return self._live_map.status_while_moved
+        return status
+
+    def _live_value(self: Self, siid: int, piid: int) -> Any:
+        """A property's value from the live source, or None to ask the vacuum."""
+        if self._live_properties is None:
+            return None
+        return self._live_properties.value(siid, piid)
+
     def _get_live_property(self: Self, siid: int, piid: int) -> Any:
+        if (value := self._live_value(siid, piid)) is not None:
+            self._remember(siid, piid, value)
+            return value
         try:
             value = self._miot_device.get_property_by(siid, piid)[0].get("value")
         except DeviceException as de:

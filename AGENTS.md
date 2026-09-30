@@ -261,6 +261,14 @@ cloud or device call raises and logs it, and compares naive local timestamps
 only with each other. Making them timezone-aware would touch the session data
 the connector persists.
 
+**Xiaomi Home is read, never imported.** When Xiaomi's own integration,
+`xiaomi_home`, has the vacuum, `xiaomi_home.py` reads the S20+'s status and live
+properties from its entities, and the map's device names its device as its
+`via_device_id`. Its license reserves its code and its cloud API for itself, so
+this integration goes through Home Assistant's registries and states alone.
+Since Home Assistant 2026.8 a device belongs to one config entry, so the two
+cannot share a device.
+
 **`except A | B` does not catch anything.** Python raises `TypeError` when it
 matches an exception against a union; only a tuple works. ruff's `B030` reports
 it, and the connector carried one until ruff arrived.

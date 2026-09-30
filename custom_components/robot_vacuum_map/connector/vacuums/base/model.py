@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any, Protocol
 
 from vacuum_map_parser_base.config.color import ColorsPalette
 from vacuum_map_parser_base.config.drawable import Drawable
@@ -10,6 +11,19 @@ from vacuum_map_parser_base.config.size import Sizes
 from vacuum_map_parser_base.config.text import Text
 
 from ...xiaomi_cloud.connector import XiaomiCloudConnector, XiaomiCloudDeviceInfo
+
+
+class LiveProperties(Protocol):
+    """A vacuum's live MIoT properties, read from somewhere other than the vacuum.
+
+    Each method returns None when it cannot tell, and the vacuum is asked instead.
+    """
+
+    def value(self, siid: int, piid: int) -> Any:
+        """The property's value."""
+
+    def activity(self) -> str | None:
+        """The vacuum's activity, which stands in for its status."""
 
 
 @dataclass
@@ -26,6 +40,7 @@ class VacuumConfig:
     image_config: ImageConfig
     sizes: Sizes
     texts: list[Text]
+    live_properties: LiveProperties | None = None
 
 
 class VacuumApi(StrEnum):
