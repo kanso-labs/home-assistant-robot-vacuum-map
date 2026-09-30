@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.4.0...v0.5.0) (2026-09-30)
+
+
+### Features
+
+* **xiaomi:** draw the b108gl no-go areas and virtual walls ([#48](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/48)) ([1f74392](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/1f74392b13fdbc93977eba57c30b1ea0b655d107))
+
+
+### Bug Fixes
+
+* stop python-miio warning about a missing mapping at start-up ([#49](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/49)) ([9bd20a2](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/9bd20a2a0d16636e35c789c0dd9076ba0871f6af))
+* update dependency vacuum-map-parser-ijai to v0.1.1 ([#54](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/54)) ([62549d7](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/62549d7424dfbc36c20898fb9c0e32e13bd8e1af))
+* update dependency vacuum-map-parser-roborock to v0.1.5 ([#55](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/55)) ([bf04848](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/bf048488fed7d3598656a00209c280fe822cd486))
+* update dependency vacuum-map-parser-xiaomi to v0.1.4 ([#56](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/56)) ([f4827e3](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/f4827e30020d5b09ef75a3a0425e1c2720373a15))
+
 ## [0.4.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.3.0...v0.4.0) (2026-09-30)
 
 
