@@ -115,7 +115,7 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
     def decode_and_parse(self, raw_map: bytes) -> MapData:
         GET_PROP_RETRIES = 5
         if self._wifi_info_sn is None or self._wifi_info_sn == "":
-            _LOGGER.debug(f"host={self._host}, token={self._token}")
+            _LOGGER.debug("host=%s", self._host)
             for _ in range(GET_PROP_RETRIES):
                 try:
                     self._wifi_info_sn = self.get_wifi_info_sn()
