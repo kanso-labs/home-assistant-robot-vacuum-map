@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.6.0...v0.7.0) (2026-09-30)
+
+
+### Features
+
+* **xiaomi:** add the b108gl's raw properties and trajectory to diagnostics ([#64](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/64)) ([798fc6f](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/798fc6f5691d21cb20a95999f5d3e303aa2d5803))
+
 ## [0.6.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.5.0...v0.6.0) (2026-09-30)
 
 
