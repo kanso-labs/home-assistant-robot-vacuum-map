@@ -1245,7 +1245,7 @@ test = [
     { name = "pyturbojpeg", specifier = "==1.8.3" },
     { name = "vacuum-map-parser-base", specifier = "==0.1.5" },
     { name = "vacuum-map-parser-dreame", specifier = "==0.1.3" },
-    { name = "vacuum-map-parser-ijai", specifier = "==0.1.0" },
+    { name = "vacuum-map-parser-ijai", specifier = "==0.1.1" },
     { name = "vacuum-map-parser-roborock", specifier = "==0.1.4" },
     { name = "vacuum-map-parser-roidmi", specifier = "==0.1.3" },
     { name = "vacuum-map-parser-viomi", specifier = "==0.1.3" },
@@ -2970,16 +2970,16 @@ wheels = [
 
 [[package]]
 name = "vacuum-map-parser-ijai"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pillow" },
     { name = "pycryptodome" },
     { name = "vacuum-map-parser-base" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/67/fb3a81333a15f6cf356ee2ff040964f9306478a5cf21f43a303c9c586f2f/vacuum_map_parser_ijai-0.1.0.tar.gz", hash = "sha256:e569ca083cc2c072624ceb6669941c1c7342c160c28233529ca3f3018397715b", size = 23000, upload-time = "2025-11-14T10:27:36.342Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/f5/8b627373221a8405258b20a8b5a275b56398ba15314e062ce32cbfc216b9/vacuum_map_parser_ijai-0.1.1.tar.gz", hash = "sha256:d6ebc80bc031dbe95e0565f8f22233cca9b480dcbfa3b54720e9708b2ac59989", size = 23317, upload-time = "2026-02-15T10:11:47.643Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/fb/5798a867ea32b081ad8062aae36fd6a86a067d91f2fa18e11b264b133165/vacuum_map_parser_ijai-0.1.0-py3-none-any.whl", hash = "sha256:baf0daa178a559551fd0c448635fbbc41b7878eb0cbcd33ba620a512d709b6f1", size = 25077, upload-time = "2025-11-14T10:27:35.225Z" },
+    { url = "https://files.pythonhosted.org/packages/68/00/e8747abbb03b241c2d1fa621498a4276936cadd4ddbd8c910b05d6d5e6ef/vacuum_map_parser_ijai-0.1.1-py3-none-any.whl", hash = "sha256:757737a15530ad247147e78b0d6debb0e45a4af200172f9358000f5cdccf0c17", size = 25308, upload-time = "2026-02-15T10:11:46.259Z" },
 ]
 
 [[package]]
