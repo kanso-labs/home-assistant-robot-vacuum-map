@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Self
 
@@ -185,6 +186,10 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._off_counter = 0
         self._status_value = None
         self._trajectory: list[dict[str, Any]] = []
+        # The last value read from each MIoT property, keyed siid-piid, and the
+        # last trajectory object downloaded, both kept for diagnostics.
+        self._property_values: dict[str, Any] = {}
+        self._raw_trajectory: bytes | None = None
 
         self._vacuum_map = next(
             (
@@ -206,6 +211,9 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
                 self._status_mapping.siid, self._status_mapping.piid
             )[0]["value"]
             self._status_value = status_value
+            self._remember(
+                self._status_mapping.siid, self._status_mapping.piid, status_value
+            )
 
             if status_value in self._status_mapping.idle_at:
                 self._off_counter += 1
@@ -237,6 +245,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         response = self._miot_device.get_property_by(
             self._vacuum_map.siid, self._vacuum_map.piid
         )[0].get("value")
+        self._remember(self._vacuum_map.siid, self._vacuum_map.piid, response)
 
         if response is None:
             return await super().get_map_name()
@@ -264,6 +273,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
 
     async def _get_trajectory(self: Self) -> list[dict[str, Any]]:
         """The path so far, from the trajectory object property 7-2 names."""
+        self._raw_trajectory = None
         if self._status_value in self._live_map.docked_at:
             # Back on the dock, the trajectory is the last clean's.
             return []
@@ -276,6 +286,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if raw_trajectory is None:
             _LOGGER.debug("Failed to download trajectory %s", name)
             return []
+        self._raw_trajectory = raw_trajectory
         return decode_trajectory(raw_trajectory)
 
     def decode_and_parse(self, raw_map: bytes) -> MapData:
@@ -380,10 +391,30 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
 
     def _get_live_property(self: Self, siid: int, piid: int) -> Any:
         try:
-            return self._miot_device.get_property_by(siid, piid)[0].get("value")
+            value = self._miot_device.get_property_by(siid, piid)[0].get("value")
         except DeviceException as de:
             _LOGGER.debug("Failed to read MIoT property %d-%d: %s", siid, piid, de)
             return None
+        self._remember(siid, piid, value)
+        return value
+
+    def _remember(self: Self, siid: int, piid: int, value: Any) -> None:
+        self._property_values[f"{siid}-{piid}"] = value
+
+    def _redacted(self: Self, value: Any) -> Any:
+        """A property value with the account and device IDs taken out.
+
+        Object names carry both, as user ID/device ID/name, and diagnostics
+        are made to be attached to public issues.
+        """
+        if not isinstance(value, str):
+            return value
+        for identifier in (self._user_id, self._device_id):
+            if identifier:
+                value = re.sub(
+                    rf"\b{re.escape(str(identifier))}\b", "**REDACTED**", value
+                )
+        return value
 
     def additional_data(self: Self) -> dict[str, Any]:
         super_data = super().additional_data()
@@ -392,4 +423,13 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             str(self._device_id),
         )
 
-        return {**super_data, "enc_key": enc_key}
+        return {
+            **super_data,
+            "enc_key": enc_key,
+            "miot_properties": {
+                key: self._redacted(value)
+                for key, value in sorted(self._property_values.items())
+            },
+            "trajectory_raw": self._raw_trajectory
+            and base64.b64encode(self._raw_trajectory).decode(),
+        }
