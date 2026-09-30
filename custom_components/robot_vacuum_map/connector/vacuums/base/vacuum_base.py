@@ -48,6 +48,14 @@ class BaseXiaomiCloudVacuum(ABC):
     def vacuum_platform() -> VacuumApi:
         pass
 
+    @staticmethod
+    def position_property(model: str) -> tuple[int, int] | None:
+        """The MIoT property a model publishes its position in, where known.
+
+        A change to it can be drawn without a download, through redraw.
+        """
+        return None
+
     @property
     @abstractmethod
     def map_archive_extension(self: Self) -> str:
@@ -101,6 +109,14 @@ class BaseXiaomiCloudVacuum(ABC):
             return None
         map_url = await self.get_map_url(map_name)
         return await self._connector.get_raw_map_data(map_url)
+
+    def redraw(self: Self, raw_map: bytes) -> MapData | None:
+        """The map drawn again from its last download, with newer live data.
+
+        It asks nothing of the vacuum or the cloud. None means there is nothing
+        new to draw, as for every vacuum without live data.
+        """
+        return None
 
     def additional_data(self: Self) -> dict[str, Any]:
         return {}

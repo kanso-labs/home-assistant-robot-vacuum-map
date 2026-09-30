@@ -186,6 +186,12 @@ _LIVE_MAP_PROP = [
 ]
 
 
+def _live_mapping(model: str) -> XiaomiVacuumLiveMapping | None:
+    return next(
+        (mapping for models, mapping in _LIVE_MAP_PROP if model in models), None
+    )
+
+
 class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     def __init__(self, vacuum_config: VacuumConfig):
         super().__init__(vacuum_config)
@@ -215,8 +221,10 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._off_counter = 0
         self._status_value = None
         # What the parse adds to the map, read before it, since the parse
-        # cannot wait on the vacuum.
+        # cannot wait on the vacuum. The positions a redraw finds extend the
+        # trajectory until the next refresh downloads it again.
         self._trajectory: list[dict[str, Any]] = []
+        self._path_since_trajectory: list[dict[str, Any]] = []
         self._restricted_areas: Any = None
         self._restricted_walls: Any = None
         self._position: Any = None
@@ -241,10 +249,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             ),
             XiaomiVacuumPropertyMapping(),
         )
-        self._live_map = next(
-            (mapping for models, mapping in _LIVE_MAP_PROP if self.model in models),
-            None,
-        )
+        self._live_map = _live_mapping(self.model)
 
     async def should_update_map(self: Self) -> bool:
         try:
@@ -277,6 +282,12 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     @staticmethod
     def vacuum_platform() -> VacuumApi:
         return VacuumApi.XIAOMI
+
+    @staticmethod
+    def position_property(model: str) -> tuple[int, int] | None:
+        if (live_map := _live_mapping(model)) is None:
+            return None
+        return live_map.siid, live_map.position_piid
 
     @property
     def map_archive_extension(self) -> str:
@@ -332,6 +343,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if self._live_map is None:
             return
         self._trajectory = await self._get_trajectory()
+        self._path_since_trajectory = []
         self._restricted_areas = await self._get_live_property(
             *self._live_map.restricted_areas
         )
@@ -417,8 +429,9 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if not isinstance(payload, dict):
             return decoded_map
 
+        path = self._trajectory + self._path_since_trajectory
         payload = with_restricted_regions(
-            with_path(payload, self._trajectory),
+            with_path(payload, path),
             self._restricted_areas,
             self._restricted_walls,
         )
@@ -427,8 +440,27 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             payload,
             position,
             docked=self._status_value in self._live_map.docked_at,
-            path=self._trajectory,
+            path=path,
         )
+
+    def redraw(self: Self, raw_map: bytes) -> MapData | None:
+        """The map drawn again, with the robot where Xiaomi Home now puts it.
+
+        Only Xiaomi Home is read, never the vacuum. Each new position extends
+        the path, until the next refresh downloads the trajectory again. On the
+        dock the robot is drawn there whatever it reports, so it is not redrawn.
+        """
+        if self._live_map is None or self._status_value in self._live_map.docked_at:
+            return None
+        siid, piid = self._live_map.siid, self._live_map.position_piid
+        position = self._live_value(siid, piid)
+        if position is None or position == self._position:
+            return None
+        self._remember(siid, piid, position)
+        self._position = position
+        if (point := parse_vacuum_position(position)) is not None:
+            self._path_since_trajectory.append({"x": point["x"], "y": point["y"]})
+        return self.decode_and_parse(raw_map)
 
     def _draw_mop_runs(self: Self, map_data: MapData) -> None:
         """Draw each mop run as a line of its own.

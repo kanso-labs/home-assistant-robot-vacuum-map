@@ -1,7 +1,7 @@
 import logging
 from typing import Self
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -55,6 +55,17 @@ class XiaomiCloudMapExtractorDataUpdateCoordinator(
         except XiaomiCloudMapExtractorException as err:
             _LOGGER.error(err)
             raise UpdateFailed(err) from err
+
+    @callback
+    def async_redraw(self: Self, _: Event[EventStateChangedData]) -> None:
+        """Draw the map again from its last download, for a robot that moved.
+
+        The entities are told directly. async_set_updated_data would put the
+        next refresh off each time, and the downloads would stop while the
+        robot kept moving.
+        """
+        if self.connector.redraw():
+            self.async_update_listeners()
 
     async def force_update_data(self) -> None:
         self.connector.force_refresh()

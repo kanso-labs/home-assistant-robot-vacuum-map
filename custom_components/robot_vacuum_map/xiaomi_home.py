@@ -5,11 +5,21 @@ and states. It imports none of Xiaomi Home's code and calls none of its APIs,
 which Xiaomi Home's license reserves for Xiaomi Home itself.
 """
 
+from collections.abc import Callable
+from typing import Any
+
 from homeassistant.components.vacuum import DOMAIN as VACUUM_DOMAIN
 from homeassistant.const import MAX_LENGTH_STATE_STATE, STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import HomeAssistant
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    callback,
+)
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import slugify
 
 XIAOMI_HOME_DOMAIN = "xiaomi_home"
@@ -43,16 +53,33 @@ class XiaomiHomeProperties:
 
     def value(self, siid: int, piid: int) -> str | None:
         """The state of Xiaomi Home's entity for the property, or None."""
-        suffix = f"_p_{siid}_{piid}"
-        return self._state(
-            next((e for e in self._entries() if e.unique_id.endswith(suffix)), None)
-        )
+        return self._state(self._entry(siid, piid))
 
     def activity(self) -> str | None:
         """The state of Xiaomi Home's vacuum entity, or None."""
         return self._state(
             next((e for e in self._entries() if e.domain == VACUUM_DOMAIN), None)
         )
+
+    @callback
+    def async_watch(
+        self,
+        siid: int,
+        piid: int,
+        action: Callable[[Event[EventStateChangedData]], Any],
+    ) -> CALLBACK_TYPE:
+        """Call action each time the property's entity changes state.
+
+        Returns what stops it. With no entity for the property, nothing is
+        watched.
+        """
+        if (entry := self._entry(siid, piid)) is None:
+            return lambda: None
+        return async_track_state_change_event(self._hass, entry.entity_id, action)
+
+    def _entry(self, siid: int, piid: int) -> er.RegistryEntry | None:
+        suffix = f"_p_{siid}_{piid}"
+        return next((e for e in self._entries() if e.unique_id.endswith(suffix)), None)
 
     def _entries(self) -> list[er.RegistryEntry]:
         return [
