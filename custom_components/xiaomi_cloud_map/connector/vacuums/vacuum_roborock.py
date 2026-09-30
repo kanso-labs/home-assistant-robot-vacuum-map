@@ -1,14 +1,14 @@
 import logging
 from typing import Self
 
-from miio import RoborockVacuum, DeviceException
-
+from miio import DeviceException, RoborockVacuum
 from vacuum_map_parser_roborock.map_data_parser import RoborockMapDataParser
-from .base.model import VacuumConfig, VacuumApi
-from .base.vacuum_base import BaseXiaomiCloudVacuum
+
 from ..utils.backoff import Backoff
-from ..utils.exceptions import InvalidDeviceTokenException
 from ..utils.dict_operations import path_extractor
+from ..utils.exceptions import InvalidDeviceTokenException
+from .base.model import VacuumApi, VacuumConfig
+from .base.vacuum_base import BaseXiaomiCloudVacuum
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class RoborockCloudVacuum(BaseXiaomiCloudVacuum):
             vacuum_config.sizes,
             vacuum_config.drawables,
             vacuum_config.image_config,
-            vacuum_config.texts
+            vacuum_config.texts,
         )
         self._vacuum = RoborockVacuum(vacuum_config.host, vacuum_config.token)
         self._backoff = Backoff(0.2, 15)
@@ -37,9 +37,7 @@ class RoborockCloudVacuum(BaseXiaomiCloudVacuum):
 
     async def get_map_url(self: Self, map_name: str) -> str | None:
         url = self._connector.get_api_url(self._server) + "/home/getmapfileurl"
-        params = {
-            "data": '{"obj_name":"' + map_name + '"}'
-        }
+        params = {"data": '{"obj_name":"' + map_name + '"}'}
         api_response = await self._connector.execute_api_call_encrypted(url, params)
         return path_extractor(api_response, "result.url")
 
@@ -67,7 +65,9 @@ class RoborockCloudVacuum(BaseXiaomiCloudVacuum):
                 return True
             else:
                 self._off_counter += 1
-                _LOGGER.debug("Vacuum is not moving. Off counter: %d", self._off_counter)
+                _LOGGER.debug(
+                    "Vacuum is not moving. Off counter: %d", self._off_counter
+                )
                 return self._off_counter <= OFF_UPDATES
 
         except DeviceException as de:
@@ -92,7 +92,10 @@ class RoborockCloudVacuum(BaseXiaomiCloudVacuum):
         self._backoff.reset()
         remaining_attempts = 10
         while map_name == MISSING_MAP_VALUE and remaining_attempts > 0:
-            _LOGGER.debug("Retrieving map name from device, remaining_attempts: %d", remaining_attempts)
+            _LOGGER.debug(
+                "Retrieving map name from device, remaining_attempts: %d",
+                remaining_attempts,
+            )
             try:
                 map_name = self._vacuum.map()[0]  # todo async
                 _LOGGER.debug("Map name %s", map_name)

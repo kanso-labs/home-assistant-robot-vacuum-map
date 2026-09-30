@@ -1,0 +1,8 @@
+# Written by release-please, in a style of its own. Formatting it only holds
+# until the next release rewrites it, and release-please reads the file back to
+# work out where the next entry goes, so reformatting is churn at best.
+CHANGELOG.md
+
+# The licence, left exactly as written. Reflowing it would be churn in a file
+# nobody should have to review, and nothing here formats it.
+LICENSE.md

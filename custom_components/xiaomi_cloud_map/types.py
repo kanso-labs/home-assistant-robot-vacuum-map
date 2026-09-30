@@ -12,4 +12,6 @@ class XiaomiCloudMapExtractorRuntimeData:
     coordinator: XiaomiCloudMapExtractorDataUpdateCoordinator
 
 
-type XiaomiCloudMapExtractorConfigEntry = ConfigEntry[XiaomiCloudMapExtractorRuntimeData]
+type XiaomiCloudMapExtractorConfigEntry = ConfigEntry[
+    XiaomiCloudMapExtractorRuntimeData
+]

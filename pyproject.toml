@@ -1,0 +1,54 @@
+# Development tooling only. The integration itself is not a Python package:
+# Home Assistant loads it from custom_components/ and installs what
+# manifest.json lists, so nothing here is ever built or published, and this
+# version never moves. The integration's version is manifest.json's, which
+# release-please owns.
+[project]
+name = "home-assistant-xiaomi-cloud-map"
+requires-python = ">=3.14.2"
+version = "0.0.0"
+
+[dependency-groups]
+dev = [
+  "pytest-homeassistant-custom-component==0.13.367",
+  "ruff==0.16.9",
+  # Home Assistant's camera component requires this at this pin, and its test
+  # harness installs no component's requirements, core ones included.
+  "PyTurboJPEG==1.8.3",
+  # manifest.json's requirements, at the same pins. Home Assistant's test
+  # harness never installs an integration's requirements, so the tests can
+  # only import the integration if they are already here. Pillow is absent for
+  # the reason it is unpinned in the manifest: Home Assistant pins it itself.
+  # vacuum-map-parser-ijai imports protobuf without declaring it. Home
+  # Assistant's own images carry it, at the version its package constraints
+  # pin, so the tests take that version too.
+  "protobuf==6.32.0",
+  "pybase64==1.5.0",
+  "pycryptodome==3.23.0",
+  "python-miio==0.5.12",
+  "vacuum-map-parser-base==0.1.5",
+  "vacuum-map-parser-dreame==0.1.3",
+  "vacuum-map-parser-ijai==0.1.0",
+  "vacuum-map-parser-roborock==0.1.4",
+  "vacuum-map-parser-roidmi==0.1.3",
+  "vacuum-map-parser-viomi==0.1.3",
+  "vacuum-map-parser-xiaomi==0.1.3",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint.per-file-ignores]
+# Upstream's connector catches whatever a cloud or device call raises and logs
+# it, and keeps naive local timestamps that it only ever compares with each
+# other. Both are deliberate there, so the rules against them are waived for the
+# connector rather than its error handling being rewritten to satisfy them.
+"custom_components/xiaomi_cloud_map/connector/**" = ["BLE001", "DTZ005", "S110"]
+
+[tool.uv]
+package = false

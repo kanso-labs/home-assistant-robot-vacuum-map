@@ -1,8 +1,8 @@
-from datetime import datetime
 import logging
-from typing import Self, Any
+from datetime import datetime
+from typing import Any, Self
 
-from homeassistant.components.image import ImageEntity, ImageEntityDescription, DOMAIN
+from homeassistant.components.image import DOMAIN, ImageEntity, ImageEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -16,16 +16,17 @@ KEY = "live_map"
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
-        config_entry: XiaomiCloudMapExtractorConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,
+    config_entry: XiaomiCloudMapExtractorConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = config_entry.runtime_data.coordinator
-    async_add_entities([XiaomiCloudMapExtractorImageEntity(hass, coordinator, config_entry)])
+    async_add_entities(
+        [XiaomiCloudMapExtractorImageEntity(hass, coordinator, config_entry)]
+    )
 
 
 class XiaomiCloudMapExtractorImageEntity(XiaomiCloudMapExtractorEntity, ImageEntity):
-
     def __init__(
         self: Self,
         hass: HomeAssistant,
