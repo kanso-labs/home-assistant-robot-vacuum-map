@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.3.0...v0.4.0) (2026-09-30)
+
+
+### Features
+
+* **xiaomi:** draw the b108gl cleaning path from the trajectory object ([d82d8c5](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/d82d8c552636ae58d8c54c8860ab404fdca36461))
+
 ## [0.3.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.2.0...v0.3.0) (2026-09-30)
 
 
