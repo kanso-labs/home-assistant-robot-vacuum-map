@@ -272,6 +272,7 @@ WALL_POINTS = [
         ],
         [{"x1": 100, "y1": 100, "x2": 400, "y2": 300}],
         {"areas": [[100, 100, 400, 100, 400, 300, 100, 300]]},
+        [{"id": 1, "fb_attr": 0, "fb_point": [100, 100, 400, 100, 400, 300, 100, 300]}],
         '{"value": "[[100, 100, 400, 100, 400, 300, 100, 300]]"}',
     ],
 )
@@ -344,3 +345,14 @@ def test_keeps_the_regions_the_map_carries() -> None:
     )
 
     assert payload["fb_regions"] == [carried, {"type": "wall", "points": WALL_POINTS}]
+
+
+def test_reads_a_no_mop_area_by_its_fb_attr() -> None:
+    """An area whose fb_attr is 1 is a no-mop area, as the parser reads it in maps."""
+    payload = with_restricted_regions(
+        {},
+        '[{"id": 2, "fb_attr": 1, "fb_point": [100, 100, 400, 100, 400, 300, 100, 300]}]',
+        None,
+    )
+
+    assert payload["fb_regions"] == [{"type": "no_mop", "points": CORNERS}]
