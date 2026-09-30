@@ -59,9 +59,7 @@ from .const import (
     CONF_IMAGE_CONFIG_TRIM_RIGHT,
     CONF_CAPTCHA_CODE,
     CONF_TWO_FACTOR_CODE,
-    NAME,
 )
-from .legacy import create_config_entry_data_from_yaml
 from .options_flow import XiaomiCloudMapExtractorOptionsFlowHandler
 from .store import save_connector_config
 from .types import XiaomiCloudMapExtractorConfigEntry
@@ -90,22 +88,6 @@ class XiaomiCloudMapExtractorFlowHandler(ConfigFlow, domain=DOMAIN):
             config_entry: XiaomiCloudMapExtractorConfigEntry) -> XiaomiCloudMapExtractorOptionsFlowHandler:
         """Get the options flow."""
         return XiaomiCloudMapExtractorOptionsFlowHandler()
-
-    async def async_step_import(
-            self, import_info: Mapping[str, Any]
-    ) -> ConfigFlowResult:
-        """Import an entry."""
-
-        def session_creator() -> ClientSession:
-            return async_create_clientsession(self.hass)
-
-        data, options = await create_config_entry_data_from_yaml(import_info, session_creator)
-        self._async_abort_entries_match({CONF_HOST: import_info[CONF_HOST]})
-        return self.async_create_entry(
-            title=NAME,
-            data=data,
-            options=options,
-        )
 
     async def async_step_reauth(
             self, entry_data: Mapping[str, Any]
