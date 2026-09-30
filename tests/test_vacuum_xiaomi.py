@@ -1,5 +1,9 @@
 """The Xiaomi connector, against the Xiaomi Robot Vacuum S20+ (b108gl)."""
 
+import base64
+import json
+import zlib
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -110,3 +114,87 @@ def test_other_models_keep_the_parser_mapping() -> None:
     vacuum = make_vacuum("xiaomi.vacuum.c102")
 
     assert poll(vacuum, 4, OFF_UPDATES + 1)[-1] is False
+
+
+def json_map(**extra: Any) -> dict[str, Any]:
+    """A 20 x 20 JSON map of free floor, 50 mm to the pixel, with a dock on it."""
+    grid = zlib.compress(bytes([1] * 400))
+    return {
+        "width": 20,
+        "height": 20,
+        "resolution": 50,
+        "origin_x": 0,
+        "origin_y": 0,
+        "map_data": base64.b64encode(grid).decode(),
+        "have_pile": 1,
+        "pile_x": 150,
+        "pile_y": 250,
+        "pile_yaw": 0,
+        **extra,
+    }
+
+
+def stub_device(
+    vacuum: XiaomiCloudVacuum, properties: dict[tuple[int, int], Any]
+) -> None:
+    """Answer MIoT reads from `properties`, keyed by (siid, piid)."""
+
+    def get_property_by(siid: int, piid: int) -> list[dict[str, Any]]:
+        return [{"siid": siid, "piid": piid, "value": properties.get((siid, piid))}]
+
+    vacuum._miot_device = MagicMock()
+    vacuum._miot_device.get_property_by.side_effect = get_property_by
+
+
+def parse(vacuum: XiaomiCloudVacuum, payload: dict[str, Any]):
+    """Run decode_and_parse on a map that decrypts to `payload`."""
+    vacuum._xiaomi_map_data_parser.unpack_map = MagicMock(
+        return_value=json.dumps(payload)
+    )
+    return vacuum.decode_and_parse(b"encrypted map")
+
+
+def test_b108gl_draws_the_robot_at_property_7_4() -> None:
+    """Cleaning, the robot is drawn where property 7-4 puts it."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): '{"x": 600, "y": 400, "yaw": 300}'})
+    assert vacuum.should_update_map
+
+    map_data = parse(vacuum, json_map())
+
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (600, 400)
+    # 300 is 3 degrees in hundredths, converted once, by the parser.
+    assert map_data.vacuum_position.a == pytest.approx(3.0)
+
+
+def test_b108gl_draws_the_robot_on_its_dock_while_docked() -> None:
+    """Charged on the dock, the robot is drawn there, not at a stale position."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(2, 1): CHARGED, (7, 4): '{"x": 600, "y": 400, "yaw": 0}'})
+    assert vacuum.should_update_map
+
+    map_data = parse(vacuum, json_map())
+
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
+
+
+def test_b108gl_draws_the_robot_on_its_dock_when_7_4_is_unknown() -> None:
+    """With no position to report, the robot is drawn on the dock."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): "1100,1100,0"})
+    assert vacuum.should_update_map
+
+    map_data = parse(vacuum, json_map())
+
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
+
+
+def test_other_models_parse_the_map_as_it_comes() -> None:
+    """Models with no live properties never read 7-4."""
+    vacuum = make_vacuum("xiaomi.vacuum.c102")
+    stub_device(vacuum, {(7, 4): '{"x": 600, "y": 400}'})
+
+    map_data = parse(vacuum, json_map())
+
+    assert map_data.vacuum_position is None
+    vacuum._miot_device.get_property_by.assert_not_called()

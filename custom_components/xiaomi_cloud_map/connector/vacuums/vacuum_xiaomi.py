@@ -17,6 +17,7 @@ from vacuum_map_parser_xiaomi.status_mapping import (
 from ..utils.exceptions import FailedConnectionException
 from .base.model import VacuumApi, VacuumConfig
 from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
+from .xiaomi_miot_enrichment import parse_vacuum_position, place_vacuum
 
 _LOGGER = logging.getLogger(__name__)
 OFF_UPDATES = 3
@@ -31,6 +32,20 @@ class XiaomiVacuumPropertyMapping:
 
     # current map property id in vacuum map service
     piid: int = 1
+
+
+@dataclass
+class XiaomiVacuumLiveMapping:
+    """Live map data a vacuum publishes as MIoT properties, not in its map"""
+
+    # vacuum map service id
+    siid: int
+
+    # vacuum position property id in vacuum map service
+    position_piid: int
+
+    # status values meaning the vacuum is on its dock
+    docked_at: tuple[int, ...]
 
 
 _NON_STANDARD_MAP_PROP = [
@@ -83,6 +98,18 @@ _NON_STANDARD_STATUS_PROP = [
     ),
 ]
 
+# Vacuums whose cloud map leaves the robot out. The b108gl publishes its
+# position as property 7-4, about every two seconds while it cleans, and is on
+# its dock while Charging (2), BreakCharging (3) or Charged (8).
+_LIVE_MAP_PROP = [
+    (
+        [
+            "xiaomi.vacuum.b108gl",
+        ],
+        XiaomiVacuumLiveMapping(siid=7, position_piid=4, docked_at=(2, 3, 8)),
+    ),
+]
+
 
 class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     def __init__(self, vacuum_config: VacuumConfig):
@@ -109,6 +136,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             get_status_mapping(self.model),
         )
         self._off_counter = 0
+        self._status_value = None
 
         self._vacuum_map = next(
             (
@@ -118,6 +146,10 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             ),
             XiaomiVacuumPropertyMapping(),
         )
+        self._live_map = next(
+            (mapping for models, mapping in _LIVE_MAP_PROP if self.model in models),
+            None,
+        )
 
     @property
     def should_update_map(self: Self) -> bool:
@@ -125,6 +157,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             status_value = self._miot_device.get_property_by(
                 self._status_mapping.siid, self._status_mapping.piid
             )[0]["value"]
+            self._status_value = status_value
 
             if status_value in self._status_mapping.idle_at:
                 self._off_counter += 1
@@ -190,7 +223,38 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             model=self.model.replace("xiaomi", "mi"),
             device_id=str(self._device_id),
         )
+        if self._live_map is not None:
+            decoded_map = self._with_live_data(decoded_map)
         return self.map_data_parser.parse(decoded_map)
+
+    def _with_live_data(self: Self, decoded_map: str) -> Any:
+        """Merge what the vacuum publishes outside its map into the map's payload."""
+        try:
+            payload = json.loads(decoded_map)
+        except TypeError, json.JSONDecodeError:
+            return decoded_map
+        if not isinstance(payload, dict):
+            return decoded_map
+
+        position = parse_vacuum_position(
+            self._get_live_property(self._live_map.position_piid)
+        )
+        return place_vacuum(
+            payload,
+            position,
+            docked=self._status_value in self._live_map.docked_at,
+        )
+
+    def _get_live_property(self: Self, piid: int) -> Any:
+        try:
+            return self._miot_device.get_property_by(self._live_map.siid, piid)[0].get(
+                "value"
+            )
+        except DeviceException as de:
+            _LOGGER.debug(
+                "Failed to read MIoT property %d-%d: %s", self._live_map.siid, piid, de
+            )
+            return None
 
     def additional_data(self: Self) -> dict[str, Any]:
         super_data = super().additional_data()
