@@ -26,7 +26,9 @@ class IjaiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._mac = vacuum_config.device_info.mac
         self._wifi_info_sn = None
 
-        self._miot_device = MiotDevice(self._host, self._token, timeout=2)
+        # Properties are read by service and property ID, which needs no mapping,
+        # but python-miio warns at start-up unless the device is given one.
+        self._miot_device = MiotDevice(self._host, self._token, timeout=2, mapping={})
 
         self._ijai_map_data_parser = IjaiMapDataParser(
             vacuum_config.palette,

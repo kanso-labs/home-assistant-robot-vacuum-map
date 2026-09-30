@@ -162,7 +162,9 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._token = vacuum_config.token
         self._host = vacuum_config.host
 
-        self._miot_device = MiotDevice(self._host, self._token, timeout=2)
+        # Properties are read by service and property ID, which needs no mapping,
+        # but python-miio warns at start-up unless the device is given one.
+        self._miot_device = MiotDevice(self._host, self._token, timeout=2, mapping={})
 
         self._xiaomi_map_data_parser = XiaomiMapDataParser(
             vacuum_config.palette,
