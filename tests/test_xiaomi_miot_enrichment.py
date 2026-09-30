@@ -7,7 +7,7 @@ import zlib
 
 import pytest
 
-from custom_components.xiaomi_vacuum_map.connector.vacuums.xiaomi_miot_enrichment import (
+from custom_components.robot_vacuum_map.connector.vacuums.xiaomi_miot_enrichment import (
     MAX_TRAJECTORY_COORDINATE,
     POSITION_UNKNOWN,
     cloud_object_name,

@@ -10,16 +10,16 @@ from vacuum_map_parser_base.config.drawable import Drawable
 from vacuum_map_parser_base.config.image_config import ImageConfig
 from vacuum_map_parser_base.config.size import Sizes
 
-from custom_components.xiaomi_vacuum_map.connector.vacuums.base.model import (
+from custom_components.robot_vacuum_map.connector.vacuums.base.model import (
     VacuumConfig,
 )
-from custom_components.xiaomi_vacuum_map.connector.vacuums.vacuum_ijai import (
+from custom_components.robot_vacuum_map.connector.vacuums.vacuum_ijai import (
     IjaiCloudVacuum,
 )
-from custom_components.xiaomi_vacuum_map.connector.vacuums.vacuum_xiaomi import (
+from custom_components.robot_vacuum_map.connector.vacuums.vacuum_xiaomi import (
     XiaomiCloudVacuum,
 )
-from custom_components.xiaomi_vacuum_map.connector.xiaomi_cloud.connector import (
+from custom_components.robot_vacuum_map.connector.xiaomi_cloud.connector import (
     XiaomiCloudDeviceInfo,
 )
 

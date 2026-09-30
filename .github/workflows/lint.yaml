@@ -47,7 +47,7 @@ jobs:
           INPUT_CATEGORY: integration
           INPUT_GITHUB_TOKEN: ${{ github.token }}
           # 2.0.5 looks for the icon only in home-assistant/brands, where
-          # xiaomi_vacuum_map will never be listed. The check that also reads
+          # robot_vacuum_map will never be listed. The check that also reads
           # an integration's own brand/ directory, hacs/integration#5128, is
           # in no release yet, so `brand` below tests for the file instead.
           # Drop this ignore at the first HACS release that carries it.
@@ -78,7 +78,7 @@ jobs:
       # What HACS's main branch tests for, standing in for the brands check
       # ignored above. tests/test_brand.py goes further, over every image.
       - name: Check for brand/icon.png
-        run: test -f custom_components/xiaomi_vacuum_map/brand/icon.png
+        run: test -f custom_components/robot_vacuum_map/brand/icon.png
 
   python:
     name: Lint Python

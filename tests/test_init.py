@@ -8,13 +8,13 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.xiaomi_vacuum_map.const import DOMAIN
+from custom_components.robot_vacuum_map.const import DOMAIN
 
 
 async def test_setup_and_unload(
     hass: HomeAssistant, config_entry: MockConfigEntry, get_data: AsyncMock
 ) -> None:
-    """The integration sets up under xiaomi_vacuum_map and unloads cleanly."""
+    """The integration sets up under robot_vacuum_map and unloads cleanly."""
     config_entry.add_to_hass(hass)
 
     assert await hass.config_entries.async_setup(config_entry.entry_id)
