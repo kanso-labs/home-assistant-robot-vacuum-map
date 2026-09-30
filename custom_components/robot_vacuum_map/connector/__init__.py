@@ -238,6 +238,7 @@ class XiaomiCloudMapExtractorConnector:
             self._config.image_config,
             self._config.sizes,
             self._config.texts,
+            self._config.live_properties,
         )
         vacuum_class = AVAILABLE_VACUUM_PLATFORMS.get(
             self._used_api, UnsupportedCloudVacuum

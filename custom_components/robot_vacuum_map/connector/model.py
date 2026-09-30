@@ -14,7 +14,7 @@ from vacuum_map_parser_base.map_data import MapData
 
 from .utils.dict_operations import as_dict_of_dict
 from .utils.list_operations import as_list_of_dict
-from .vacuums.base.model import VacuumApi
+from .vacuums.base.model import LiveProperties, VacuumApi
 
 
 class XiaomiCloudMapExtractorConnectorStatus(IntEnum):
@@ -46,6 +46,7 @@ class XiaomiCloudMapExtractorConnectorConfiguration:
     drawables: list[Drawable]
     sizes: Sizes
     texts: list[Text]
+    live_properties: LiveProperties | None = None
 
 
 @dataclass

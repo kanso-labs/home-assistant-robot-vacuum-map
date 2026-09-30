@@ -45,7 +45,7 @@ from .types import (
     XiaomiCloudMapExtractorConfigEntry,
     XiaomiCloudMapExtractorRuntimeData,
 )
-from .xiaomi_home import xiaomi_home_device_id
+from .xiaomi_home import XiaomiHomeProperties, xiaomi_home_device_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,6 +54,11 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: XiaomiCloudMapExtractorConfigEntry
 ) -> bool:
     xcme_configuration = to_configuration(entry)
+    via_device_id = xiaomi_home_device_id(
+        hass, xcme_configuration.server, xcme_configuration.device_id
+    )
+    if via_device_id is not None:
+        xcme_configuration.live_properties = XiaomiHomeProperties(hass, via_device_id)
 
     def session_creator() -> ClientSession:
         return async_create_clientsession(hass)
@@ -67,10 +72,7 @@ async def async_setup_entry(
     )
     await xcme_update_coordinator.async_config_entry_first_refresh()
     entry.runtime_data = XiaomiCloudMapExtractorRuntimeData(
-        xcme_update_coordinator,
-        xiaomi_home_device_id(
-            hass, entry.data[CONF_SERVER], entry.data[CONF_DEVICE_ID]
-        ),
+        xcme_update_coordinator, via_device_id
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

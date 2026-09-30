@@ -577,3 +577,86 @@ async def test_b108gl_puts_the_robot_on_the_captured_dock_once_charged() -> None
     assert [call.args for call in download.await_args_list] == [("3",)]
     assert map_data.path is None
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (200, 134)
+
+
+class FakeXiaomiHome:
+    """A live source answering as Xiaomi Home's entities would."""
+
+    def __init__(self, activity: str | None, **values: Any) -> None:
+        self.activity_value = activity
+        self.values = {
+            tuple(int(p) for p in key.removeprefix("p").split("_")): value
+            for key, value in values.items()
+        }
+
+    def value(self, siid: int, piid: int) -> Any:
+        return self.values.get((siid, piid))
+
+    def activity(self) -> str | None:
+        return self.activity_value
+
+
+def with_xiaomi_home(vacuum: XiaomiCloudVacuum, source: FakeXiaomiHome) -> None:
+    vacuum._live_properties = source
+    stub_device(vacuum, {})
+
+
+@pytest.mark.parametrize(
+    ("activity", "status", "refreshes"),
+    [
+        ("cleaning", SWEEPING, True),
+        ("returning", GO_CHARGING, True),
+        ("docked", CHARGING, True),
+        ("paused", PAUSED, True),
+    ],
+)
+def test_b108gl_reads_its_status_from_xiaomi_home(
+    activity: str, status: int, refreshes: bool
+) -> None:
+    """The activity stands in for the status, and the vacuum is not asked."""
+    vacuum = make_vacuum(B108GL)
+    with_xiaomi_home(vacuum, FakeXiaomiHome(activity))
+
+    assert vacuum.should_update_map is refreshes
+    assert vacuum._status_value == status
+    vacuum._miot_device.get_property_by.assert_not_called()
+
+
+def test_b108gl_counts_an_idle_robot_that_moved_as_remote_controlled() -> None:
+    """Xiaomi Home reads remote control as idle; a moving position gives it away."""
+    vacuum = make_vacuum(B108GL)
+    source = FakeXiaomiHome("idle", p7_4='{"position":[0,0,0]}')
+    with_xiaomi_home(vacuum, source)
+    polls = [vacuum.should_update_map for _ in range(OFF_UPDATES + 1)]
+    assert polls[-1] is False
+
+    source.values[(7, 4)] = '{"position":[400,0,0]}'
+
+    assert vacuum.should_update_map
+    assert vacuum._status_value == REMOTE
+
+
+def test_b108gl_asks_the_vacuum_when_xiaomi_home_cannot_tell() -> None:
+    vacuum = make_vacuum(B108GL)
+    with_xiaomi_home(vacuum, FakeXiaomiHome(None))
+    vacuum._miot_device.get_property_by.side_effect = lambda siid, piid: [
+        {"siid": siid, "piid": piid, "value": SWEEPING}
+    ]
+
+    assert vacuum.should_update_map
+    vacuum._miot_device.get_property_by.assert_called_with(2, 1)
+
+
+def test_b108gl_draws_the_robot_where_xiaomi_home_reports_it() -> None:
+    """7-4 comes from Xiaomi Home's sensor, and the vacuum is not asked for it."""
+    vacuum = make_vacuum(B108GL)
+    with_xiaomi_home(
+        vacuum, FakeXiaomiHome("cleaning", p7_4='{"position":[-1290,-1810,870]}')
+    )
+    assert vacuum.should_update_map
+
+    map_data = parse(vacuum, json_map())
+
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (-1290, -1810)
+    asked = {call.args for call in vacuum._miot_device.get_property_by.call_args_list}
+    assert (7, 4) not in asked
