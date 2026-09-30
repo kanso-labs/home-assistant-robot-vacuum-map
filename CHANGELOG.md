@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/kanso-labs/home-assistant-xiaomi-cloud-map/compare/v0.1.0...v0.1.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **xiaomi:** keep refreshing the b108gl map while it cleans ([#38](https://github.com/kanso-labs/home-assistant-xiaomi-cloud-map/issues/38)) ([40414c3](https://github.com/kanso-labs/home-assistant-xiaomi-cloud-map/commit/40414c33e4f03c6f6fc8fa910a07084d04546cd7))
+
 ## 0.1.0 (2026-09-30)
 
 
