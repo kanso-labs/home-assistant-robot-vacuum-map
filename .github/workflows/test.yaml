@@ -1,0 +1,53 @@
+name: Test
+
+on:
+  # Every pull request, for the stacked pull requests described in lint.yaml.
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# See lint.yaml: a newer push supersedes an older run, except on main.
+concurrency:
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: test-${{ github.ref }}
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      # Installs the Python and uv that .tool-versions pins, so this job and
+      # a local run resolve the same versions.
+      - name: Set up mise
+        uses: jdx/mise-action@v5.0.0
+
+      - name: Run tests
+        run: uv run --locked --no-default-groups --group test pytest
+
+  # The fixed name the ruleset requires, as in lint.yaml.
+  confirm:
+    name: Confirm tests succeeded
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - test
+    if: always()
+    steps:
+      - name: Check the tests succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          failed=$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' <<< "${NEEDS}")
+          if [[ -n "${failed}" ]]; then
+            echo "Tests did not succeed:"
+            echo "${failed}"
+            exit 1
+          fi

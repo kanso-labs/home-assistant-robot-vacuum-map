@@ -1,0 +1,155 @@
+name: Lint
+
+on:
+  # Every pull request rather than only those into main, because work here
+  # lands as stacked pull requests, each based on the one below it. Filtered to
+  # main, none of a stack but its bottom would be checked until the rest had
+  # merged down onto it.
+  pull_request:
+  push:
+    branches:
+      - main
+  # HACS's own sample workflow runs nightly, and so does this one: HACS's
+  # checks change under a repository that does not, and a new one should fail
+  # here the morning after it ships rather than on whichever pull request comes
+  # next.
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A push to a branch that already has a run in progress supersedes it, since a
+# pull request's checks only ever show its head commit. Never on main, where
+# each run is the repository re-verifying what it just merged.
+concurrency:
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: lint-${{ github.ref }}
+
+jobs:
+  # The image HACS publishes, at a release tag, rather than hacs/action: every
+  # version of that action starts ghcr.io/hacs/action:main, so pinning the
+  # action would pin nothing that runs (#1). The image reads the repository
+  # through the GitHub API rather than a checkout, which is why the job is
+  # granted nothing, as HACS's sample workflow has it.
+  hacs:
+    name: Validate with HACS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    steps:
+      # A docker:// step passes no `with:` inputs, so they go in as the
+      # INPUT_* variables hacs/action would have set.
+      - name: Validate with HACS
+        uses: docker://ghcr.io/hacs/action:2.0.5
+        env:
+          INPUT_CATEGORY: integration
+          INPUT_GITHUB_TOKEN: ${{ github.token }}
+          # 2.0.5 looks for the icon only in home-assistant/brands, where
+          # xiaomi_cloud_map will never be listed. The check that also reads
+          # an integration's own brand/ directory, hacs/integration#5128, is
+          # in no release yet, so `brand` below tests for the file instead.
+          # Drop this ignore at the first HACS release that carries it.
+          INPUT_IGNORE: brands
+
+  hassfest:
+    name: Validate with hassfest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      # The image rather than home-assistant/actions/hassfest, which runs it
+      # with no tag at all (#1). The tag is the Home Assistant release the
+      # tests also run against, and Renovate moves the two together.
+      - name: Validate with hassfest
+        uses: docker://ghcr.io/home-assistant/hassfest:2026.9.4
+
+  brand:
+    name: Check the brand icon
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      # What HACS's main branch tests for, standing in for the brands check
+      # ignored above. tests/test_brand.py goes further, over every image.
+      - name: Check for brand/icon.png
+        run: test -f custom_components/xiaomi_cloud_map/brand/icon.png
+
+  python:
+    name: Lint Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      # Installs the Python and uv that .tool-versions pins, so this job and
+      # a local run resolve the same versions.
+      - name: Set up mise
+        uses: jdx/mise-action@v5.0.0
+
+      - name: Check Python formatting
+        run: uv run --locked --only-group lint ruff format --check
+
+      - name: Lint Python
+        run: uv run --locked --only-group lint ruff check
+
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # renovate: datasource=npm depName=prettier
+      PRETTIER_VERSION: '3.9.9'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      # Pinned, because an unpinned Prettier turns its next formatting change
+      # into a red build on whichever pull request happens to be open at the
+      # time, which tells that author nothing about their own work.
+      - name: Check formatting
+        run: npx --yes "prettier@${PRETTIER_VERSION}" --check .
+
+  lint-workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Lint workflows
+        uses: kanso-labs/actions/lint-workflows@v4.0.2
+
+  # One job with a fixed name for the ruleset to require. It fails when any job
+  # it needs did not succeed, so a job added above gates merges as soon as it
+  # is listed here, with no change to the ruleset.
+  confirm:
+    name: Confirm lint succeeded
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - brand
+      - format
+      - hacs
+      - hassfest
+      - lint-workflows
+      - python
+    if: always()
+    steps:
+      - name: Check every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          failed=$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"' <<< "${NEEDS}")
+          if [[ -n "${failed}" ]]; then
+            echo "Lint did not succeed:"
+            echo "${failed}"
+            exit 1
+          fi
