@@ -3,15 +3,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "datasourceTemplate": "pypi",
-      "description": "manifest.json's requirements. No Renovate manager reads a Home Assistant manifest, and these pins are exactly what Home Assistant installs for the integration. Only exact pins match, so Pillow, which Home Assistant pins itself, is left alone.",
-      "managerFilePatterns": ["/^custom_components/[^/]+/manifest\\.json$/"],
-      "matchStrings": [
-        "\"(?<depName>[A-Za-z0-9][A-Za-z0-9._-]*)==(?<currentValue>[^\"]+)\""
-      ]
-    },
-    {
-      "customType": "regex",
       "datasourceTemplate": "{{{datasource}}}",
       "description": "Tool versions pinned in a workflow, annotated above their env value",
       "managerFilePatterns": ["/^\\.github/workflows/.+\\.yaml$/"],
@@ -43,7 +34,7 @@
       "matchPackageNames": ["protobuf", "pyturbojpeg"]
     },
     {
-      "description": "manifest.json's requirements are what an installed integration runs, so bumping one has to release it. release-please releases only for feat and fix here, and the shared preset types every upgrade deps, which it hides. pyproject.toml pins the same packages for the tests, and both files land in one pull request because Renovate names the branch after the package.",
+      "description": "manifest.json's requirements are what an installed integration runs, so bumping one has to release it. Renovate's homeassistant-manifest manager reads them, and skips Pillow, which carries no version because Home Assistant pins it. release-please releases only for feat and fix here, and the shared preset types every upgrade deps, which it hides. pyproject.toml pins the same packages for the tests, and both files land in one pull request because Renovate names the branch after the package.",
       "matchPackageNames": [
         "pybase64",
         "pycryptodome",
