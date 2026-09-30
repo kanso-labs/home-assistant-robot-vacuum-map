@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.7.0...v0.7.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* keep Xiaomi session secrets out of the debug log ([#69](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/69)) ([4053d54](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/4053d540fd566061880084fbfd93e3e4498db81d))
+
 ## [0.7.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.6.0...v0.7.0) (2026-09-30)
 
 
