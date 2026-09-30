@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.5.0...v0.6.0) (2026-09-30)
+
+
+### Features
+
+* **xiaomi:** draw no-mop areas from 2-11 in the fb_point form ([#60](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/60)) ([c9b8472](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/c9b84727f85a6240e377984d0cdd45f533cb548a))
+
+
+### Bug Fixes
+
+* **xiaomi:** fall back to the default map name when the property has none ([#58](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/58)) ([6a01d2d](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/6a01d2d059c97436a1d59b4468ea9559d834bcd8))
+
 ## [0.5.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.4.0...v0.5.0) (2026-09-30)
 
 
