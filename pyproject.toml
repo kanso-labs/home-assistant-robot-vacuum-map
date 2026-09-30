@@ -13,6 +13,13 @@ version = "0.0.0"
 [dependency-groups]
 lint = ["ruff==0.16.9"]
 test = [
+  # The Home Assistant release the tests run against, which the hassfest image
+  # in lint.yaml also names. pytest-homeassistant-custom-component pins it too,
+  # but it publishes a release for every Home Assistant beta as well, and its
+  # own version cannot say which. This pin is what makes a beta-built release
+  # fail to lock rather than slip into the tests; Renovate moves the three
+  # together.
+  "homeassistant==2026.9.4",
   "pytest-homeassistant-custom-component==0.13.367",
   # Home Assistant's camera component requires this at this pin, and its test
   # harness installs no component's requirements, core ones included.

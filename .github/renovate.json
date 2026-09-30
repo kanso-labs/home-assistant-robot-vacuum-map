@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "pypi",
+      "description": "manifest.json's requirements. No Renovate manager reads a Home Assistant manifest, and these pins are exactly what Home Assistant installs for the integration. Only exact pins match, so Pillow, which Home Assistant pins itself, is left alone.",
+      "managerFilePatterns": ["/^custom_components/[^/]+/manifest\\.json$/"],
+      "matchStrings": [
+        "\"(?<depName>[A-Za-z0-9][A-Za-z0-9._-]*)==(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "{{{datasource}}}",
+      "description": "Tool versions pinned in a workflow, annotated above their env value",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.yaml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+_VERSION: '(?<currentValue>[^']+)'"
+      ]
+    }
+  ],
+  "description": "local>kanso-labs/.github:renovate-config is the organization's shared Renovate preset, holding the settings that have to hold in every kanso-labs repository. It is listed last because a later preset wins a conflict with an earlier one: moved ahead of config:recommended it would be overridden by the very preset it exists to correct. This file is merged over the runner's config.js rather than inheriting from it, so extending the preset here is what carries an organization-wide setting into this repository at all. See the README in kanso-labs/.github.",
+  "extends": ["config:recommended", "local>kanso-labs/.github:renovate-config"],
+  "packageRules": [
+    {
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/",
+      "description": "Home Assistant tags its betas 2026.10.0b0 and the like, and the hassfest image carries them all. Docker versioning already reads the b0 as unstable; this states it outright, because a hassfest from a beta would validate against a Home Assistant the tests do not run.",
+      "matchPackageNames": ["ghcr.io/home-assistant/hassfest"]
+    },
+    {
+      "description": "The hassfest image, homeassistant and pytest-homeassistant-custom-component all name one Home Assistant release, so they move to the next one in one pull request. pytest-homeassistant-custom-component also publishes a release for every Home Assistant beta, under a version that cannot say so; the exact homeassistant pin in pyproject.toml makes such a release fail to lock instead of reaching the tests, and a failed lock fails CI, which keeps the shared automerge rule off it.",
+      "groupName": "Home Assistant",
+      "matchPackageNames": [
+        "ghcr.io/home-assistant/hassfest",
+        "homeassistant",
+        "pytest-homeassistant-custom-component"
+      ]
+    },
+    {
+      "description": "Pinned in pyproject.toml to what Home Assistant itself pins, PyTurboJPEG by its camera component and protobuf by its package constraints, only because its test harness installs neither. A newer release would test against something no Home Assistant ships, so these move by hand, with the Home Assistant bump that changes Home Assistant's own pin.",
+      "enabled": false,
+      "matchPackageNames": ["protobuf", "pyturbojpeg"]
+    },
+    {
+      "description": "manifest.json's requirements are what an installed integration runs, so bumping one has to release it. release-please releases only for feat and fix here, and the shared preset types every upgrade deps, which it hides. pyproject.toml pins the same packages for the tests, and both files land in one pull request because Renovate names the branch after the package.",
+      "matchPackageNames": [
+        "pybase64",
+        "pycryptodome",
+        "python-miio",
+        "vacuum-map-parser-*"
+      ],
+      "semanticCommitType": "fix"
+    }
+  ]
+}
