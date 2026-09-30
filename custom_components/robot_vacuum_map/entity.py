@@ -65,6 +65,10 @@ class XiaomiCloudMapExtractorEntity(
             name=self._name,
             model=self._model,
         )
+        # Since Home Assistant 2026.8 a device belongs to one integration, so the
+        # map cannot share Xiaomi Home's device; it is connected via it instead.
+        if (via_device_id := config_entry.runtime_data.via_device_id) is not None:
+            self._attr_device_info["via_device_id"] = via_device_id
         self._attr_unique_id = f"{self._device_id}_{domain}_{key}"
 
     def _data(self: Self) -> XiaomiCloudMapExtractorData | None:
