@@ -9,7 +9,10 @@ from miio.miot_device import MiotDevice
 from vacuum_map_parser_base.map_data import MapData
 from vacuum_map_parser_xiaomi.aes_decryptor import gen_md5_key
 from vacuum_map_parser_xiaomi.map_data_parser import XiaomiMapDataParser
-from vacuum_map_parser_xiaomi.status_mapping import get_status_mapping
+from vacuum_map_parser_xiaomi.status_mapping import (
+    XiaomiVacuumStatusMapping,
+    get_status_mapping,
+)
 
 from ..utils.exceptions import FailedConnectionException
 from .base.model import VacuumApi, VacuumConfig
@@ -65,6 +68,21 @@ _NON_STANDARD_MAP_PROP = [
     ),
 ]
 
+# Status mappings for models vacuum_map_parser_xiaomi gets wrong. Its generic
+# idle_at, (0, 1, 2, 4, 8, 10), reads the b108gl's 4 as idle, but in the
+# b108gl's MIoT spec 4 is Sweeping, so the map stopped refreshing a few polls
+# into every clean. Idle here is Idle, Charging, BreakCharging, Paused, Charged
+# and Updating, which leaves Sweeping (4), Go Charging (6), Remote (7) and
+# Mapping (9) as moving.
+_NON_STANDARD_STATUS_PROP = [
+    (
+        [
+            "xiaomi.vacuum.b108gl",
+        ],
+        XiaomiVacuumStatusMapping(idle_at=(1, 2, 3, 5, 8, 10)),
+    ),
+]
+
 
 class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     def __init__(self, vacuum_config: VacuumConfig):
@@ -82,7 +100,14 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             vacuum_config.texts,
         )
 
-        self._status_mapping = get_status_mapping(self.model)
+        self._status_mapping = next(
+            (
+                mapping
+                for models, mapping in _NON_STANDARD_STATUS_PROP
+                if self.model in models
+            ),
+            get_status_mapping(self.model),
+        )
         self._off_counter = 0
 
         self._vacuum_map = next(
