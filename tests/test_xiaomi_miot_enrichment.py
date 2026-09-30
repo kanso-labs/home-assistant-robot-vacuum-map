@@ -19,7 +19,8 @@ from custom_components.robot_vacuum_map.connector.vacuums.xiaomi_miot_enrichment
     with_restricted_regions,
 )
 
-DOCK = {"have_pile": 1, "pile_x": 150, "pile_y": 250, "pile_yaw": 9000}
+# The pile_yaw a real S20+ reported for its dock, in milliradians.
+DOCK = {"have_pile": 1, "pile_x": 150, "pile_y": 250, "pile_yaw": 1753}
 
 
 @pytest.mark.parametrize(
@@ -77,7 +78,7 @@ def test_places_a_docked_robot_on_its_dock() -> None:
     assert place_vacuum(DOCK, position, docked=True)["position"] == {
         "x": 150.0,
         "y": 250.0,
-        "yaw": 9000,
+        "yaw": 1.753,
     }
 
 

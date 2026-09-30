@@ -120,14 +120,23 @@ def parse_vacuum_position(value: Any) -> dict[str, Any] | None:
 
 
 def charger_position(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """The dock's position in the map payload, in the position shape."""
+    """The dock's position in the map payload, in the position shape.
+
+    Its yaw is in milliradians, as 7-4's is, and goes on in radians for the
+    parser to convert whole. A real S20+ reported a pile_yaw of 1753, 100.4°,
+    while it sat docked facing 99.6°.
+    """
     if not payload.get("have_pile"):
         return None
     try:
         x, y = float(payload["pile_x"]), float(payload["pile_y"])
     except KeyError, TypeError, ValueError:
         return None
-    return {"x": x, "y": y, "yaw": payload.get("pile_yaw", 0)}
+    try:
+        yaw = float(payload.get("pile_yaw", 0)) / 1000
+    except TypeError, ValueError:
+        yaw = 0
+    return {"x": x, "y": y, "yaw": yaw}
 
 
 def place_vacuum(
