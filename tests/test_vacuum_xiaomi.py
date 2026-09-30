@@ -3,6 +3,7 @@
 import base64
 import json
 import math
+import pathlib
 import struct
 import zlib
 from typing import Any
@@ -495,3 +496,84 @@ def test_b108gl_draws_the_robot_where_a_real_s20_plus_reports_it() -> None:
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (-1290, -1810)
     # 870 milliradians is 49.8 degrees, the way the robot was driving.
     assert map_data.vacuum_position.a == pytest.approx(math.degrees(0.87))
+
+
+# Captured from a real S20+ on 0.7.1: its map, decrypted, and two diagnostics
+# downloads taken during one clean, while it swept and while it drove home. The
+# room names are replaced, and the object names keep the redaction diagnostics
+# gave them.
+FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "b108gl"
+CAPTURED_MAP = json.loads((FIXTURES / "map.json").read_text())
+CAPTURE_SWEEPING, CAPTURE_GOING_HOME = json.loads(
+    (FIXTURES / "captures.json").read_text()
+)
+CAPTURES = pytest.mark.parametrize(
+    "capture", [CAPTURE_SWEEPING, CAPTURE_GOING_HOME], ids=["sweeping", "going home"]
+)
+
+
+def stub_capture(
+    vacuum: XiaomiCloudVacuum,
+    capture: dict[str, Any],
+    overrides: dict[tuple[int, int], Any] | None = None,
+) -> AsyncMock:
+    """Answer as the S20+ did when the capture was taken, with its real map."""
+    properties = {
+        tuple(int(part) for part in key.split("-")): value
+        for key, value in capture["properties"].items()
+    }
+    stub_device(vacuum, properties | (overrides or {}))
+    download = stub_cloud(vacuum, **{"3": b"map", "1": capture["trajectory"].encode()})
+    vacuum._xiaomi_map_data_parser.unpack_map = MagicMock(
+        return_value=json.dumps(CAPTURED_MAP)
+    )
+    return download
+
+
+@CAPTURES
+def test_b108gl_keeps_refreshing_through_a_captured_clean(
+    capture: dict[str, Any],
+) -> None:
+    """Sweeping (4) and driving home (6) both keep the map refreshing."""
+    vacuum = make_vacuum(B108GL)
+
+    assert all(poll(vacuum, capture["properties"]["2-1"], OFF_UPDATES + 2))
+
+
+@pytest.mark.parametrize(
+    ("capture", "points", "mop_run_lengths"),
+    [(CAPTURE_SWEEPING, 139, [125]), (CAPTURE_GOING_HOME, 218, [189])],
+    ids=["sweeping", "going home"],
+)
+async def test_b108gl_draws_a_captured_clean(
+    capture: dict[str, Any], points: int, mop_run_lengths: list[int]
+) -> None:
+    """The real map, path, mop run and position come out as the robot had them."""
+    vacuum = make_vacuum(B108GL)
+    download = stub_capture(vacuum, capture)
+    assert vacuum.should_update_map
+
+    map_data, _ = await vacuum.get_map()
+
+    # 7-2 names the trajectory "1" and 7-1 the map "3".
+    assert [call.args for call in download.await_args_list] == [("1",), ("3",)]
+    assert len(map_data.rooms) == 11
+    assert (map_data.charger.x, map_data.charger.y) == (200, 134)
+    assert len(map_data.path.path[0]) == points
+    assert [len(run) for run in map_data.mop_path.path] == mop_run_lengths
+    x, y, yaw = json.loads(capture["properties"]["7-4"])["position"]
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (x, y)
+    assert map_data.vacuum_position.a == pytest.approx(math.degrees(yaw / 1000))
+
+
+async def test_b108gl_puts_the_robot_on_the_captured_dock_once_charged() -> None:
+    """Docked, the robot sits on the real dock, with no path left over."""
+    vacuum = make_vacuum(B108GL)
+    download = stub_capture(vacuum, CAPTURE_GOING_HOME, {(2, 1): CHARGED})
+    assert vacuum.should_update_map
+
+    map_data, _ = await vacuum.get_map()
+
+    assert [call.args for call in download.await_args_list] == [("3",)]
+    assert map_data.path is None
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (200, 134)
