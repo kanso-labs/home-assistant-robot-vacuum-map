@@ -96,7 +96,6 @@ class XiaomiCloudMapExtractorData:
             "map_name": self.map_data.map_name,
             "additional_parameters": self.map_data.additional_parameters,
             "calibration": self.map_data.calibration(),
-            "additional_vacuum_data": self.additional_vacuum_data,
         }
         return {
             "map_data": map_data_dict,
@@ -110,4 +109,7 @@ class XiaomiCloudMapExtractorData:
             "last_real_update_timestamp": self.last_real_update_timestamp
             and self.last_real_update_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             "status": self.status,
+            # Beside the map rather than in it, so a refresh whose map did not
+            # parse still shows what the vacuum reported.
+            "additional_vacuum_data": self.additional_vacuum_data,
         }

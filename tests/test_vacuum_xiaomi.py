@@ -447,3 +447,37 @@ def test_b108gl_draws_a_no_mop_area_from_2_11() -> None:
     assert [area.as_list() for area in map_data.no_mopping_areas] == [
         [100, 100, 400, 100, 400, 300, 100, 300]
     ]
+
+
+async def test_b108gl_keeps_its_raw_live_data_for_diagnostics() -> None:
+    """Diagnostics carry each property as read and the trajectory as downloaded.
+
+    The account and device IDs in the object names are taken out.
+    """
+    vacuum = make_vacuum(B108GL)
+    stub_device(
+        vacuum,
+        {
+            (2, 1): SWEEPING,
+            (7, 1): MAP_OBJECT,
+            (7, 2): TRAJECTORY_OBJECT,
+            (7, 4): "600,400,300",
+            (2, 11): AREA,
+            (2, 12): WALL,
+        },
+    )
+    stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    assert vacuum.should_update_map
+
+    await vacuum.get_map()
+    data = vacuum.additional_data()
+
+    assert data["miot_properties"] == {
+        "2-1": SWEEPING,
+        "2-11": AREA,
+        "2-12": WALL,
+        "7-1": '{"obj_name": "**REDACTED**/**REDACTED**/map_7"}',
+        "7-2": "**REDACTED**/**REDACTED**/trajectory_7",
+        "7-4": "600,400,300",
+    }
+    assert base64.b64decode(data["trajectory_raw"]) == TRAJECTORY
