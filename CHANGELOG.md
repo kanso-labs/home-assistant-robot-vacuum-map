@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.10.0...v0.11.0) (2026-09-30)
+
+
+### Features
+
+* read the S20+'s status and position from Xiaomi Home ([#83](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/83)) ([d7d9ea5](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/d7d9ea55ca0a922b614eed5127a06612c593ac9d))
+
+
+### Bug Fixes
+
+* **xiaomi:** turn a docked b108gl the way its dock faces ([#86](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/86)) ([e27607a](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/e27607a0f21a191253b498edbf5706d5284f76f5))
+
 ## [0.10.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.9.0...v0.10.0) (2026-09-30)
 
 
