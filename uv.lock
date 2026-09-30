@@ -1249,7 +1249,7 @@ test = [
     { name = "vacuum-map-parser-roborock", specifier = "==0.1.4" },
     { name = "vacuum-map-parser-roidmi", specifier = "==0.1.3" },
     { name = "vacuum-map-parser-viomi", specifier = "==0.1.3" },
-    { name = "vacuum-map-parser-xiaomi", specifier = "==0.1.3" },
+    { name = "vacuum-map-parser-xiaomi", specifier = "==0.1.4" },
 ]
 
 [[package]]
@@ -3023,16 +3023,16 @@ wheels = [
 
 [[package]]
 name = "vacuum-map-parser-xiaomi"
-version = "0.1.3"
+version = "0.1.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pillow" },
     { name = "pycryptodome" },
     { name = "vacuum-map-parser-base" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/d1/2510cdd59ff7ec232e9062d3e61457dfa98af06547e67afa866ec9493cfa/vacuum_map_parser_xiaomi-0.1.3.tar.gz", hash = "sha256:705964a1e2f30f1e05db408a673c9c797e57eeee894fcb4bcf198cce1e3b339b", size = 16220, upload-time = "2026-02-13T10:57:55.031Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/6d/786461ea52f0bca7408d1774393c674bd6a8eb5867521e55126d582a9751/vacuum_map_parser_xiaomi-0.1.4.tar.gz", hash = "sha256:a81aeddca0fbe9db9fe35ac6e4871fbf3555575115e161a2fc61ae05ac1bdf4c", size = 16777, upload-time = "2026-04-20T21:34:20.545Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/10/77f2f1854e2c34a6c68d945b921296997c23cd1aca6b6ef56ecfaa5bd28a/vacuum_map_parser_xiaomi-0.1.3-py3-none-any.whl", hash = "sha256:3062bd9861e06931018cd2a2f51e0baefcb42d1809d67d53808e251c1ccebd7b", size = 17584, upload-time = "2026-02-13T10:57:53.758Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/d7/e8a325371e085738e6b5825eab95196ddee631d5a81b10415105c3d21a6a/vacuum_map_parser_xiaomi-0.1.4-py3-none-any.whl", hash = "sha256:75fa117b445aa0ca0e1e5d71c5bcf09a3e8119db9f357847fdc09ec0e44bbd92", size = 18089, upload-time = "2026-04-20T21:34:19.564Z" },
 ]
 
 [[package]]
