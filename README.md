@@ -47,6 +47,13 @@ The map can be adjusted afterwards from the integration's **Configure** button:
 the image's scale, rotation and trimming, its colours, the rooms' colours, which
 elements are drawn, and their sizes.
 
+A new entry draws the map four times the size of the cloud map's grid, with the
+elements' sizes multiplied to match. An entry set up before 0.8.0 keeps drawing
+at its old scale of 1 until you raise **Image dimensions → Scale**, and raise
+**Map elements' sizes** by the same factor so the path and the robot keep their
+size against the map. Walls and rooms cannot get finer than the grid itself,
+which on the Xiaomi Robot Vacuum S20+ is 5 cm to a cell.
+
 ### Entities
 
 | Entity                                                        | What it does                                                           |

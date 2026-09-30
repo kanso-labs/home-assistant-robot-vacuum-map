@@ -19,6 +19,11 @@ PLATFORMS: list[Platform] = [
 CONTENT_TYPE: Final = "image/png"
 DEFAULT_UPDATE_INTERVAL: Final = timedelta(seconds=10)
 
+# How much larger than the cloud map's grid a new entry draws the map, with the
+# elements' sizes multiplied to match, so each keeps its size against the map.
+# At 4 the S20+'s 144 x 245 grid comes out 576 x 980.
+DEFAULT_IMAGE_SCALE: Final = 4
+
 CONF_USED_MAP_API: Final = "used_map_api"
 CONF_SERVER: Final = "server"
 

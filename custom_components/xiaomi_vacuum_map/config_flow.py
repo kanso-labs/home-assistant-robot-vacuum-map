@@ -62,6 +62,7 @@ from .const import (
     CONF_TEXTS,
     CONF_TWO_FACTOR_CODE,
     CONF_USED_MAP_API,
+    DEFAULT_IMAGE_SCALE,
     DOMAIN,
 )
 from .options_flow import XiaomiCloudMapExtractorOptionsFlowHandler
@@ -345,7 +346,7 @@ class XiaomiCloudMapExtractorFlowHandler(ConfigFlow, domain=DOMAIN):
                                     Drawable.IGNORED_OBSTACLES_WITH_PHOTO,
                                 ]
                             ],
-                            CONF_SIZES: {k.value: v for k, v in Sizes.SIZES.items()},
+                            CONF_SIZES: self._default_sizes(),
                             CONF_TEXTS: [],
                         },
                     )
@@ -463,13 +464,17 @@ class XiaomiCloudMapExtractorFlowHandler(ConfigFlow, domain=DOMAIN):
     def _default_image_config() -> dict[str, float]:
         image_config = ImageConfig()
         return {
-            CONF_IMAGE_CONFIG_SCALE: image_config.scale,
+            CONF_IMAGE_CONFIG_SCALE: DEFAULT_IMAGE_SCALE,
             CONF_IMAGE_CONFIG_ROTATE: image_config.rotate,
             CONF_IMAGE_CONFIG_TRIM_LEFT: image_config.trim.left,
             CONF_IMAGE_CONFIG_TRIM_RIGHT: image_config.trim.right,
             CONF_IMAGE_CONFIG_TRIM_TOP: image_config.trim.top,
             CONF_IMAGE_CONFIG_TRIM_BOTTOM: image_config.trim.bottom,
         }
+
+    @staticmethod
+    def _default_sizes() -> dict[str, float]:
+        return {k.value: v * DEFAULT_IMAGE_SCALE for k, v in Sizes.SIZES.items()}
 
     @staticmethod
     def _default_colors() -> dict[str, tuple[int, int, int, int]]:
