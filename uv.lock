@@ -1215,6 +1215,7 @@ lint = [
     { name = "ruff" },
 ]
 test = [
+    { name = "homeassistant" },
     { name = "protobuf" },
     { name = "pybase64" },
     { name = "pycryptodome" },
@@ -1235,6 +1236,7 @@ test = [
 [package.metadata.requires-dev]
 lint = [{ name = "ruff", specifier = "==0.16.9" }]
 test = [
+    { name = "homeassistant", specifier = "==2026.9.4" },
     { name = "protobuf", specifier = "==6.32.0" },
     { name = "pybase64", specifier = "==1.5.0" },
     { name = "pycryptodome", specifier = "==3.23.0" },
