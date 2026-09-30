@@ -424,3 +424,26 @@ async def test_falls_back_to_the_default_map_name(value: Any) -> None:
     stub_device(vacuum, {(7, 1): value})
 
     assert await vacuum.get_map_name() == "0"
+
+
+def test_b108gl_draws_a_no_mop_area_from_2_11() -> None:
+    """An area 2-11 marks as no-mop is drawn as one, not as no-go."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(
+        vacuum,
+        {
+            (2, 1): CHARGED,
+            (
+                2,
+                11,
+            ): '[{"id": 2, "fb_attr": 1, "fb_point": [100, 100, 400, 100, 400, 300, 100, 300]}]',
+        },
+    )
+    assert vacuum.should_update_map
+
+    map_data = parse(vacuum, json_map())
+
+    assert map_data.no_go_areas == []
+    assert [area.as_list() for area in map_data.no_mopping_areas] == [
+        [100, 100, 400, 100, 400, 300, 100, 300]
+    ]

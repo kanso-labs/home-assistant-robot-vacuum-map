@@ -39,7 +39,9 @@ MAX_MOP_RUN_GAP = 500
 MIN_MOP_RUN_POINTS = 3
 
 # The keys an object may list restricted areas or walls under, and the keys a
-# region may list its points under, as upstream pull request #750 reads them.
+# region may list its points under, as upstream pull request #750 reads them,
+# with fb_point added, the key vacuum_map_parser_xiaomi 0.1.4 reads an area's
+# corners from in the Dreame-based Xiaomi models' maps.
 _REGION_LIST_KEYS = (
     "areas",
     "zones",
@@ -51,12 +53,17 @@ _REGION_LIST_KEYS = (
 )
 _POINT_LIST_KEYS = (
     "points",
+    "fb_point",
     "area_points",
     "region_points",
     "wall_points",
     "coordinates",
     "vertices",
 )
+
+# The fb_attr value marking an area as no-mop rather than no-go, as
+# vacuum_map_parser_xiaomi 0.1.4 reads it, verified there on the ov81gl.
+_FB_ATTR_NO_MOP = 1
 
 
 def parse_vacuum_position(value: Any) -> dict[str, Any] | None:
@@ -199,16 +206,18 @@ def with_restricted_regions(
     """Return the map payload with the restricted areas and walls in it.
 
     They go into "fb_regions", the forbidden regions vacuum_map_parser_xiaomi
-    draws, after any the map carries itself. Each area becomes a no-go region
-    of four corners, and each wall a region of type "wall", whose ends the
-    parser reads from its first and third points. With nothing to add, the
-    payload comes back as it was.
+    draws, after any the map carries itself. Each area becomes a region of
+    four corners, no-mop where its fb_attr says so and no-go otherwise, and
+    each wall a region of type "wall", whose ends the parser reads from its
+    first and third points. With nothing to add, the payload comes back as it
+    was.
     """
     regions = [
-        {"type": "no_go", "points": corners} for corners in _regions(areas, 4)
+        {"type": _area_type(item), "points": corners}
+        for item, corners in _regions(areas, 4)
     ] + [
         {"type": "wall", "points": [ends[0], ends[0], ends[1], ends[1]]}
-        for ends in _regions(walls, 2)
+        for _, ends in _regions(walls, 2)
     ]
     if not regions:
         return payload
@@ -274,13 +283,19 @@ def _decompress_trajectory(raw: bytes) -> bytes:
         return b""
 
 
-def _regions(value: Any, corners: int) -> list[list[dict[str, float]]]:
-    """The points of each region a restricted area or wall property lists."""
+def _regions(value: Any, corners: int) -> list[tuple[Any, list[dict[str, float]]]]:
+    """Each region a restricted area or wall property lists, with its points."""
     return [
-        points
+        (item, points)
         for item in _region_items(value, corners)
         if (points := _region_points(item, corners)) is not None
     ]
+
+
+def _area_type(item: Any) -> str:
+    if isinstance(item, dict) and item.get("fb_attr") == _FB_ATTR_NO_MOP:
+        return "no_mop"
+    return "no_go"
 
 
 def _region_items(value: Any, corners: int) -> list[Any]:
