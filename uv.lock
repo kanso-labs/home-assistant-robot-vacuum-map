@@ -1206,7 +1206,7 @@ wheels = [
 ]
 
 [[package]]
-name = "home-assistant-xiaomi-cloud-map"
+name = "home-assistant-xiaomi-vacuum-map"
 version = "0.0.0"
 source = { virtual = "." }
 

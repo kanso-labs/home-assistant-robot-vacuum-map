@@ -8,7 +8,7 @@ from homeassistant.setup import async_setup_component
 from PIL import Image
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
-from custom_components.xiaomi_cloud_map.const import DOMAIN
+from custom_components.xiaomi_vacuum_map.const import DOMAIN
 
 BRAND = Path(__file__).parent.parent / "custom_components" / DOMAIN / "brand"
 

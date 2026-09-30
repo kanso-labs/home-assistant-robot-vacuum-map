@@ -3,9 +3,9 @@ from typing import Final
 
 from homeassistant.const import Platform
 
-NAME: Final = "Xiaomi Cloud Map"
+NAME: Final = "Xiaomi Vacuum Map"
 
-DOMAIN: Final = "xiaomi_cloud_map"
+DOMAIN: Final = "xiaomi_vacuum_map"
 
 PLATFORMS: list[Platform] = [
     Platform.CAMERA,

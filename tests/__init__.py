@@ -1,1 +1,1 @@
-"""Tests for the Xiaomi Cloud Map integration."""
+"""Tests for the Xiaomi Vacuum Map integration."""

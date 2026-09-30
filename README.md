@@ -1,4 +1,4 @@
-# Xiaomi Cloud Map
+# Xiaomi Vacuum Map
 
 A Home Assistant integration that draws a live map of your robot vacuum from
 Xiaomi's cloud, with no rooting. It reads Xiaomi, Roborock, Dreame, Viomi,
@@ -6,27 +6,27 @@ Roidmi and iJai vacuums.
 
 It is a kanso-labs copy of Piotr Machowski's
 [Xiaomi Cloud Map Extractor](https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor),
-with a domain of its own, `xiaomi_cloud_map`, so the two can be installed side
+with a domain of its own, `xiaomi_vacuum_map`, so the two can be installed side
 by side.
 
-<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-xiaomi-cloud-map/main/images/map_no_rooms.png" width="48%" alt="A map drawn without rooms">
-<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-xiaomi-cloud-map/main/images/map_rooms.png" width="48%" alt="The same map with its rooms coloured">
+<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-xiaomi-vacuum-map/main/images/map_no_rooms.png" width="48%" alt="A map drawn without rooms">
+<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-xiaomi-vacuum-map/main/images/map_rooms.png" width="48%" alt="The same map with its rooms coloured">
 
 ## Installation
 
 It needs Home Assistant 2026.3 or later, and [HACS](https://hacs.xyz/).
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kanso-labs&repository=home-assistant-xiaomi-cloud-map&category=integration)
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kanso-labs&repository=home-assistant-xiaomi-vacuum-map&category=integration)
 
 1. Open the link above. Or, in HACS, choose **Custom repositories** from the
-   menu and add `https://github.com/kanso-labs/home-assistant-xiaomi-cloud-map`
+   menu and add `https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map`
    as an **Integration**.
-2. Download **Xiaomi Cloud Map**.
+2. Download **Xiaomi Vacuum Map**.
 3. Restart Home Assistant.
 
 ## Configuration
 
-[![Open your Home Assistant instance and start setting up Xiaomi Cloud Map.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=xiaomi_cloud_map)
+[![Open your Home Assistant instance and start setting up Xiaomi Vacuum Map.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=xiaomi_vacuum_map)
 
 1. Sign in to the Xiaomi account the Xiaomi Home app uses, not a Roborock or
    Dreame app account. Use the username and password, or a QR code or login
@@ -76,7 +76,7 @@ Debug logging shows each poll, and why a map was or was not downloaded:
 ```yaml
 logger:
   logs:
-    custom_components.xiaomi_cloud_map: debug
+    custom_components.xiaomi_vacuum_map: debug
 ```
 
 The diagnostics download on the integration's device holds the last map's data,
