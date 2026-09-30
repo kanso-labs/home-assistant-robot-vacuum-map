@@ -5,7 +5,7 @@ Guidance for coding agents working in this repository.
 ## What this is
 
 A Home Assistant custom integration, installed through HACS, that draws a live
-map of a robot vacuum from Xiaomi's cloud. Its domain is `xiaomi_cloud_map`.
+map of a robot vacuum from Xiaomi's cloud. Its domain is `xiaomi_vacuum_map`.
 
 It is a copy of Piotr Machowski's
 [Xiaomi Cloud Map Extractor](https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor),
@@ -15,14 +15,14 @@ v3.0.0-alpha-24, `688fe3e` on its `dev_extracted_libraries` branch, with
 upstream's history below it. Everything after that commit is this repository's;
 see Upstream.
 
-| Path                                            | What it is                                                                   |
-| ----------------------------------------------- | ---------------------------------------------------------------------------- |
-| `custom_components/xiaomi_cloud_map/`           | The integration: config and options flows, coordinator, entities             |
-| `custom_components/xiaomi_cloud_map/connector/` | Upstream's cloud connector, and one vacuum class per map API                 |
-| `custom_components/xiaomi_cloud_map/brand/`     | The icon and logo, which Home Assistant 2026.3 and later serves from here    |
-| `tests/`                                        | pytest, through `pytest-homeassistant-custom-component`                      |
-| `blueprints/`                                   | Upstream's automations, written for v2's YAML camera and not re-tested on v3 |
-| `images/`                                       | What `README.md` shows                                                       |
+| Path                                             | What it is                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `custom_components/xiaomi_vacuum_map/`           | The integration: config and options flows, coordinator, entities             |
+| `custom_components/xiaomi_vacuum_map/connector/` | Upstream's cloud connector, and one vacuum class per map API                 |
+| `custom_components/xiaomi_vacuum_map/brand/`     | The icon and logo, which Home Assistant 2026.3 and later serves from here    |
+| `tests/`                                         | pytest, through `pytest-homeassistant-custom-component`                      |
+| `blueprints/`                                    | Upstream's automations, written for v2's YAML camera and not re-tested on v3 |
+| `images/`                                        | What `README.md` shows                                                       |
 
 The blueprints stay because users import them by URL, but nothing here links
 them, and they drive the camera the way v2 did rather than through v3's **Update
@@ -173,7 +173,7 @@ upstream commit rarely applies. Bring one in like this:
    git log --oneline 688fe3e..refs/upstream/dev_extracted_libraries
    ```
 
-2. Make the change by hand under `custom_components/xiaomi_cloud_map/`, run
+2. Make the change by hand under `custom_components/xiaomi_vacuum_map/`, run
    `uv run ruff format`, and add a test that fails without it.
 3. Credit its author with a `Co-authored-by:` trailer. The squash merge keeps
    only the pull request title, so make sure the trailer is still in the merge
@@ -209,7 +209,7 @@ the pull request is open, even though only the title survives the merge.
 
 **HACS's `brands` check is ignored, and `brand/icon.png` is checked in its
 place.** HACS 2.0.5, its newest release, looks for brand images only in
-home-assistant/brands, where `xiaomi_cloud_map` will never be listed. The check
+home-assistant/brands, where `xiaomi_vacuum_map` will never be listed. The check
 that also reads an integration's own `brand/` directory,
 [hacs/integration#5128](https://github.com/hacs/integration/pull/5128), is on
 HACS's main branch but in no release. So `lint.yaml` passes

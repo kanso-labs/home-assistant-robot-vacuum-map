@@ -2,7 +2,7 @@
 
 import pytest
 
-from custom_components.xiaomi_cloud_map.connector.vacuums.xiaomi_miot_enrichment import (
+from custom_components.xiaomi_vacuum_map.connector.vacuums.xiaomi_miot_enrichment import (
     POSITION_UNKNOWN,
     parse_vacuum_position,
     place_vacuum,

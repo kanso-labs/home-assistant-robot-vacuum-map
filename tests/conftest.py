@@ -18,13 +18,13 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from vacuum_map_parser_base.config.drawable import Drawable
 from vacuum_map_parser_base.config.size import Sizes
 
-from custom_components.xiaomi_cloud_map.config_flow import (
+from custom_components.xiaomi_vacuum_map.config_flow import (
     XiaomiCloudMapExtractorFlowHandler,
 )
-from custom_components.xiaomi_cloud_map.connector.model import (
+from custom_components.xiaomi_vacuum_map.connector.model import (
     XiaomiCloudMapExtractorData,
 )
-from custom_components.xiaomi_cloud_map.const import (
+from custom_components.xiaomi_vacuum_map.const import (
     CONF_COLORS,
     CONF_DRAWABLES,
     CONF_IMAGE_CONFIG,
@@ -78,7 +78,7 @@ def config_entry() -> MockConfigEntry:
 def get_data() -> Generator[AsyncMock]:
     """Answer every poll with an empty map instead of calling Xiaomi's cloud."""
     with patch(
-        "custom_components.xiaomi_cloud_map.connector.XiaomiCloudMapExtractorConnector.get_data",
+        "custom_components.xiaomi_vacuum_map.connector.XiaomiCloudMapExtractorConnector.get_data",
         return_value=XiaomiCloudMapExtractorData(),
     ) as get_data:
         yield get_data

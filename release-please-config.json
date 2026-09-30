@@ -21,7 +21,7 @@
       "extra-files": [
         {
           "jsonpath": "$.version",
-          "path": "custom_components/xiaomi_cloud_map/manifest.json",
+          "path": "custom_components/xiaomi_vacuum_map/manifest.json",
           "type": "json"
         }
       ],

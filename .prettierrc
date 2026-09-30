@@ -2,7 +2,7 @@
   "arrowParens": "always",
   "overrides": [
     {
-      "files": "custom_components/xiaomi_cloud_map/manifest.json",
+      "files": "custom_components/xiaomi_vacuum_map/manifest.json",
       "options": { "parser": "json-stringify" }
     }
   ],
