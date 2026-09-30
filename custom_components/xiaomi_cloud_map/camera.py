@@ -4,29 +4,14 @@ from typing import Self, Any
 from homeassistant.components.camera import Camera, CameraEntityDescription, DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import CONTENT_TYPE
 from .coordinator import XiaomiCloudMapExtractorDataUpdateCoordinator
 from .entity import XiaomiCloudMapExtractorEntity
 from .types import XiaomiCloudMapExtractorConfigEntry
-from .legacy import handle_old_config, LEGACY_PLATFORM_SCHEMA
 
 _LOGGER = logging.getLogger(__name__)
 KEY = "live_map"
-
-
-PLATFORM_SCHEMA = LEGACY_PLATFORM_SCHEMA
-
-
-async def async_setup_platform(
-        hass: HomeAssistant,
-        config: ConfigType,
-        async_add_entities: AddEntitiesCallback,
-        discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """YAML init: import via config flow."""
-    handle_old_config(hass, config)
 
 
 async def async_setup_entry(

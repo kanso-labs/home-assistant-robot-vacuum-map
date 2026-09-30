@@ -55,7 +55,7 @@
         "description": "Confirm detected device configuration."
       },
       "reauth_confirm": {
-        "description": "The Xiaomi Cloud Map Extractor integration needs to re-authenticate your account in order to update the tokens or add missing cloud credentials.",
+        "description": "The Xiaomi Cloud Map integration needs to re-authenticate your account in order to update the tokens or add missing cloud credentials.",
         "title": "Authentication expired for {name}"
       },
       "select_vacuum": {
@@ -657,12 +657,6 @@
           }
         }
       }
-    }
-  },
-  "issues": {
-    "deprecated_yaml": {
-      "description": "Configuring {integration_title} using YAML is being removed.\n\nYour existing YAML configuration has been imported into the UI automatically.\n\nRemove the `{domain}` camera from your configuration.yaml file and restart Home Assistant to fix this issue.",
-      "title": "The {integration_title} YAML configuration is being removed"
     }
   }
 }
