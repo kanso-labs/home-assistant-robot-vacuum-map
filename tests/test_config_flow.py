@@ -2,10 +2,10 @@
 
 from vacuum_map_parser_base.config.size import Size, Sizes
 
-from custom_components.xiaomi_vacuum_map.config_flow import (
+from custom_components.robot_vacuum_map.config_flow import (
     XiaomiCloudMapExtractorFlowHandler,
 )
-from custom_components.xiaomi_vacuum_map.const import CONF_IMAGE_CONFIG_SCALE
+from custom_components.robot_vacuum_map.const import CONF_IMAGE_CONFIG_SCALE
 
 
 def test_draws_a_new_entry_four_times_the_size_of_the_grid() -> None:

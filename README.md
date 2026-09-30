@@ -1,4 +1,4 @@
-# Xiaomi Vacuum Map
+# Robot Vacuum Map
 
 [![Lint][lint-shield]][lint-workflow] [![Test][test-shield]][test-workflow]
 [![Release][release-shield]][release] [![HACS][hacs-shield]][hacs]
@@ -10,30 +10,30 @@ Roidmi and iJai vacuums.
 
 It is a kanso-labs copy of Piotr Machowski's
 [Xiaomi Cloud Map Extractor](https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor),
-with a domain of its own, `xiaomi_vacuum_map`, so the two can be installed side
+with a domain of its own, `robot_vacuum_map`, so the two can be installed side
 by side.
 
-<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-xiaomi-vacuum-map/main/images/map_no_rooms.png" width="48%" alt="A map drawn without rooms">
-<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-xiaomi-vacuum-map/main/images/map_rooms.png" width="48%" alt="The same map with its rooms coloured">
+<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-robot-vacuum-map/main/images/map_no_rooms.png" width="48%" alt="A map drawn without rooms">
+<img src="https://raw.githubusercontent.com/kanso-labs/home-assistant-robot-vacuum-map/main/images/map_rooms.png" width="48%" alt="The same map with its rooms coloured">
 
 ## Installation
 
 It needs Home Assistant 2026.3 or later, and [HACS](https://hacs.xyz/).
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kanso-labs&repository=home-assistant-xiaomi-vacuum-map&category=integration)
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kanso-labs&repository=home-assistant-robot-vacuum-map&category=integration)
 
 Or add it by hand, from **HACS → ⋮ → Custom repositories**, as an
 **Integration**:
 
 ```text
-https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map
+https://github.com/kanso-labs/home-assistant-robot-vacuum-map
 ```
 
-Then download **Xiaomi Vacuum Map** and restart Home Assistant.
+Then download **Robot Vacuum Map** and restart Home Assistant.
 
 ## Configuration
 
-[![Open your Home Assistant instance and start setting up Xiaomi Vacuum Map.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=xiaomi_vacuum_map)
+[![Open your Home Assistant instance and start setting up Robot Vacuum Map.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=robot_vacuum_map)
 
 1. Sign in to the Xiaomi account the Xiaomi Home app uses, not a Roborock or
    Dreame app account. Use the username and password, or a QR code or login
@@ -90,7 +90,7 @@ Debug logging shows each poll, and why a map was or was not downloaded:
 ```yaml
 logger:
   logs:
-    custom_components.xiaomi_vacuum_map: debug
+    custom_components.robot_vacuum_map: debug
 ```
 
 The diagnostics download on the integration's device holds the last map, both as
@@ -104,7 +104,7 @@ downloaded, with the account and device IDs taken out of object names.
 Fork, then clone the repository:
 
 ```shell
-git clone https://github.com/your-username/home-assistant-xiaomi-vacuum-map.git
+git clone https://github.com/your-username/home-assistant-robot-vacuum-map.git
 ```
 
 `mise install` puts the Python and uv that [`.tool-versions`](.tool-versions)
@@ -168,14 +168,14 @@ It is built on others' work:
 [hacs-shield]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg
 [lint-shield]:
-  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/lint.yaml/badge.svg
+  https://github.com/kanso-labs/home-assistant-robot-vacuum-map/actions/workflows/lint.yaml/badge.svg
 [lint-workflow]:
-  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/lint.yaml
+  https://github.com/kanso-labs/home-assistant-robot-vacuum-map/actions/workflows/lint.yaml
 [release]:
-  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/releases/latest
+  https://github.com/kanso-labs/home-assistant-robot-vacuum-map/releases/latest
 [release-shield]:
-  https://img.shields.io/github/v/release/kanso-labs/home-assistant-xiaomi-vacuum-map
+  https://img.shields.io/github/v/release/kanso-labs/home-assistant-robot-vacuum-map
 [test-shield]:
-  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/test.yaml/badge.svg
+  https://github.com/kanso-labs/home-assistant-robot-vacuum-map/actions/workflows/test.yaml/badge.svg
 [test-workflow]:
-  https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/actions/workflows/test.yaml
+  https://github.com/kanso-labs/home-assistant-robot-vacuum-map/actions/workflows/test.yaml

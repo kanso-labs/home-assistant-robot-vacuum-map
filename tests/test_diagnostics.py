@@ -1,6 +1,6 @@
 """What a diagnostics download carries about the vacuum."""
 
-from custom_components.xiaomi_vacuum_map.connector.model import (
+from custom_components.robot_vacuum_map.connector.model import (
     XiaomiCloudMapExtractorData,
 )
 

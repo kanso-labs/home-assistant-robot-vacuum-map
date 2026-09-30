@@ -6,12 +6,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from custom_components.xiaomi_vacuum_map.connector.xiaomi_cloud.connector import (
+from custom_components.robot_vacuum_map.connector.xiaomi_cloud.connector import (
     XiaomiCloudConnector,
     XiaomiCloudConnectorConfig,
     XiaomiCloudSessionData,
 )
-from custom_components.xiaomi_vacuum_map.connector.xiaomi_cloud.utils import (
+from custom_components.robot_vacuum_map.connector.xiaomi_cloud.utils import (
     REDACTED,
     redacted,
     without_query,

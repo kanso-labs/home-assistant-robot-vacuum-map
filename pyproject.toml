@@ -4,7 +4,7 @@
 # version never moves. The integration's version is manifest.json's, which
 # release-please owns.
 [project]
-name = "home-assistant-xiaomi-vacuum-map"
+name = "home-assistant-robot-vacuum-map"
 requires-python = ">=3.14.2"
 version = "0.0.0"
 
@@ -57,7 +57,7 @@ target-version = "py314"
 # it, and keeps naive local timestamps that it only ever compares with each
 # other. Both are deliberate there, so the rules against them are waived for the
 # connector rather than its error handling being rewritten to satisfy them.
-"custom_components/xiaomi_vacuum_map/connector/**" = ["BLE001", "DTZ005", "S110"]
+"custom_components/robot_vacuum_map/connector/**" = ["BLE001", "DTZ005", "S110"]
 
 [tool.uv]
 default-groups = ["lint", "test"]
