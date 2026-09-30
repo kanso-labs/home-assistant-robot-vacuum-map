@@ -2,15 +2,16 @@
 
 import base64
 import json
+import struct
 import zlib
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from vacuum_map_parser_base.config.color import ColorsPalette
+from vacuum_map_parser_base.config.color import ColorsPalette, SupportedColor
 from vacuum_map_parser_base.config.drawable import Drawable
 from vacuum_map_parser_base.config.image_config import ImageConfig
-from vacuum_map_parser_base.config.size import Sizes
+from vacuum_map_parser_base.config.size import Size, Sizes
 
 from custom_components.xiaomi_vacuum_map.connector.vacuums.base.model import (
     VacuumConfig,
@@ -38,7 +39,7 @@ MAPPING = 9
 UPDATING = 10
 
 
-def make_vacuum(model: str) -> XiaomiCloudVacuum:
+def make_vacuum(model: str, **config: Any) -> XiaomiCloudVacuum:
     """A connector for one vacuum, with no cloud or device behind it."""
     device_info = XiaomiCloudDeviceInfo(
         device_id="123456789",
@@ -61,11 +62,14 @@ def make_vacuum(model: str) -> XiaomiCloudVacuum:
             host="192.0.2.10",
             token="0" * 32,
             model=model,
-            palette=ColorsPalette(),
-            drawables=list(Drawable),
-            image_config=ImageConfig(),
-            sizes=Sizes(),
-            texts=[],
+            **{
+                "palette": ColorsPalette(),
+                "drawables": list(Drawable),
+                "image_config": ImageConfig(),
+                "sizes": Sizes(),
+                "texts": [],
+                **config,
+            },
         )
     )
 
@@ -198,3 +202,180 @@ def test_other_models_parse_the_map_as_it_comes() -> None:
 
     assert map_data.vacuum_position is None
     vacuum._miot_device.get_property_by.assert_not_called()
+
+
+MAP_OBJECT = '{"obj_name": "1/123456789/map_7"}'
+TRAJECTORY_OBJECT = "1/123456789/trajectory_7"
+
+
+def trajectory(*points: tuple[int, int, int]) -> bytes:
+    """A zlib-compressed trajectory object: marker, then x and y as int32."""
+    return zlib.compress(b"".join(struct.pack("<Bii", *point) for point in points))
+
+
+# Swept across, then two mop runs that a single line would join.
+TRAJECTORY = trajectory(
+    (0x02, 100, 100),
+    (0x02, 200, 100),
+    (0x03, 300, 100),
+    (0x03, 400, 100),
+    (0x03, 500, 100),
+    (0x02, 600, 100),
+    (0x03, 700, 800),
+    (0x03, 800, 800),
+    (0x03, 900, 800),
+)
+
+
+def stub_cloud(vacuum: XiaomiCloudVacuum, **objects: bytes) -> AsyncMock:
+    """Serve each cloud object by name, and decrypt the map to json_map()."""
+    download = AsyncMock(side_effect=lambda name: objects.get(name))
+    vacuum.get_raw_map_data = download
+    vacuum._xiaomi_map_data_parser.unpack_map = MagicMock(
+        return_value=json.dumps(json_map())
+    )
+    return download
+
+
+async def test_b108gl_draws_the_path_from_property_7_2() -> None:
+    """Cleaning, the trajectory 7-2 names becomes the path, mop runs apart."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(
+        vacuum,
+        {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT, (7, 4): None},
+    )
+    download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    assert vacuum.should_update_map
+
+    map_data, _ = await vacuum.get_map()
+
+    assert [(p.x, p.y) for p in map_data.path.path[0]] == [
+        (100, 100),
+        (200, 100),
+        (300, 100),
+        (400, 100),
+        (500, 100),
+        (600, 100),
+        (700, 800),
+        (800, 800),
+        (900, 800),
+    ]
+    assert [[p.x for p in run] for run in map_data.mop_path.path] == [
+        [300, 400, 500],
+        [700, 800, 900],
+    ]
+    # With 7-4 silent, the robot is drawn where its path ends.
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (900, 800)
+    download.assert_any_await("trajectory_7")
+
+
+async def test_b108gl_draws_no_stale_path_on_its_dock() -> None:
+    """Docked, the last clean's trajectory is neither downloaded nor drawn."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(
+        vacuum,
+        {(2, 1): CHARGED, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT, (7, 4): None},
+    )
+    download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    assert vacuum.should_update_map
+
+    map_data, _ = await vacuum.get_map()
+
+    assert map_data.path is None
+    assert map_data.mop_path is None
+    assert [call.args for call in download.await_args_list] == [("map_7",)]
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
+
+
+async def test_b108gl_draws_the_mop_runs_on_the_map() -> None:
+    """The mop runs change the image, which a path without mopping does not."""
+
+    async def image_for(raw_trajectory: bytes) -> bytes:
+        vacuum = make_vacuum(B108GL)
+        stub_device(
+            vacuum,
+            {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT},
+        )
+        stub_cloud(vacuum, map_7=b"map", trajectory_7=raw_trajectory)
+        assert vacuum.should_update_map
+        map_data, _ = await vacuum.get_map()
+        return map_data.image.data.tobytes()
+
+    swept_only = trajectory(
+        *[
+            (0x02, x, y)
+            for _, x, y in struct.iter_unpack("<Bii", zlib.decompress(TRAJECTORY))
+        ]
+    )
+
+    assert await image_for(TRAJECTORY) != await image_for(swept_only)
+
+
+async def test_b108gl_survives_a_trajectory_that_does_not_download() -> None:
+    """With no trajectory to be had, the map is drawn without a path."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(
+        vacuum,
+        {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT, (7, 4): None},
+    )
+    stub_cloud(vacuum, map_7=b"map")
+    assert vacuum.should_update_map
+
+    map_data, _ = await vacuum.get_map()
+
+    assert map_data.path is None
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
+
+
+RED = (255, 0, 0, 255)
+BLUE = (0, 0, 255, 255)
+
+
+@pytest.mark.parametrize("rotate", [0, 90, 180, 270])
+async def test_b108gl_draws_mop_runs_over_the_path_at_every_rotation(
+    rotate: int,
+) -> None:
+    """Each mop run covers its stretch of path, however the map is rotated.
+
+    The parser rotates the image before the runs are drawn. With the path in
+    red, the runs in blue and both the same width, a blue pixel off the red
+    path would be a run drawn out of step with the rotation.
+    """
+
+    async def colours(raw_trajectory: bytes) -> tuple[set, set]:
+        vacuum = make_vacuum(
+            B108GL,
+            palette=ColorsPalette(
+                {SupportedColor.PATH: RED, SupportedColor.MOP_PATH: BLUE}
+            ),
+            drawables=[Drawable.PATH, Drawable.MOP_PATH],
+            image_config=ImageConfig(scale=4, rotate=rotate),
+            sizes=Sizes({Size.PATH_WIDTH: 3, Size.MOP_PATH_WIDTH: 3}),
+        )
+        stub_device(
+            vacuum, {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT}
+        )
+        stub_cloud(vacuum, map_7=b"map", trajectory_7=raw_trajectory)
+        assert vacuum.should_update_map
+        map_data, _ = await vacuum.get_map()
+        image = map_data.image.data.convert("RGBA")
+        pixels = [
+            ((x, y), image.getpixel((x, y)))
+            for x in range(image.width)
+            for y in range(image.height)
+        ]
+        return {xy for xy, c in pixels if c == BLUE}, {
+            xy for xy, c in pixels if c == RED
+        }
+
+    swept_only = trajectory(
+        *[
+            (0x02, x, y)
+            for _, x, y in struct.iter_unpack("<Bii", zlib.decompress(TRAJECTORY))
+        ]
+    )
+    mop_pixels, _ = await colours(TRAJECTORY)
+    _, path_pixels = await colours(swept_only)
+
+    assert mop_pixels
+    assert mop_pixels <= path_pixels

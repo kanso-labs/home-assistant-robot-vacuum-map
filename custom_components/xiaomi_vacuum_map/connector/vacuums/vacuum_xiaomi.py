@@ -6,7 +6,12 @@ from typing import Any, Self
 
 from miio.exceptions import DeviceException
 from miio.miot_device import MiotDevice
-from vacuum_map_parser_base.map_data import MapData
+from PIL.Image import Transpose
+from vacuum_map_parser_base.config.color import SupportedColor
+from vacuum_map_parser_base.config.drawable import Drawable
+from vacuum_map_parser_base.config.size import Size
+from vacuum_map_parser_base.image_generator import ImageGenerator
+from vacuum_map_parser_base.map_data import MapData, Path, Point
 from vacuum_map_parser_xiaomi.aes_decryptor import gen_md5_key
 from vacuum_map_parser_xiaomi.map_data_parser import XiaomiMapDataParser
 from vacuum_map_parser_xiaomi.status_mapping import (
@@ -17,10 +22,30 @@ from vacuum_map_parser_xiaomi.status_mapping import (
 from ..utils.exceptions import FailedConnectionException
 from .base.model import VacuumApi, VacuumConfig
 from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
-from .xiaomi_miot_enrichment import parse_vacuum_position, place_vacuum
+from .xiaomi_miot_enrichment import (
+    cloud_object_name,
+    decode_trajectory,
+    mop_runs,
+    parse_vacuum_position,
+    place_vacuum,
+    with_path,
+)
 
 _LOGGER = logging.getLogger(__name__)
 OFF_UPDATES = 3
+
+# The transposes the image generator rotates a map by, for the rotations it
+# does exactly, and the transposes that undo them.
+_ROTATE = {
+    90: Transpose.ROTATE_90,
+    180: Transpose.ROTATE_180,
+    270: Transpose.ROTATE_270,
+}
+_UNROTATE = {
+    90: Transpose.ROTATE_270,
+    180: Transpose.ROTATE_180,
+    270: Transpose.ROTATE_90,
+}
 
 
 @dataclass
@@ -43,6 +68,9 @@ class XiaomiVacuumLiveMapping:
 
     # vacuum position property id in vacuum map service
     position_piid: int
+
+    # trajectory object name property id in vacuum map service
+    trajectory_piid: int
 
     # status values meaning the vacuum is on its dock
     docked_at: tuple[int, ...]
@@ -98,15 +126,19 @@ _NON_STANDARD_STATUS_PROP = [
     ),
 ]
 
-# Vacuums whose cloud map leaves the robot out. The b108gl publishes its
-# position as property 7-4, about every two seconds while it cleans, and is on
-# its dock while Charging (2), BreakCharging (3) or Charged (8).
+# Vacuums whose cloud map leaves the robot and its path out. The b108gl
+# publishes its position as property 7-4, about every two seconds while it
+# cleans, names its trajectory object as property 7-2, a new one every couple of
+# seconds, and is on its dock while Charging (2), BreakCharging (3) or Charged
+# (8).
 _LIVE_MAP_PROP = [
     (
         [
             "xiaomi.vacuum.b108gl",
         ],
-        XiaomiVacuumLiveMapping(siid=7, position_piid=4, docked_at=(2, 3, 8)),
+        XiaomiVacuumLiveMapping(
+            siid=7, position_piid=4, trajectory_piid=2, docked_at=(2, 3, 8)
+        ),
     ),
 ]
 
@@ -137,6 +169,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         )
         self._off_counter = 0
         self._status_value = None
+        self._trajectory: list[dict[str, Any]] = []
 
         self._vacuum_map = next(
             (
@@ -209,6 +242,27 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     async def get_map_url(self, map_name: str) -> str | None:
         return await self.get_fallback_map_url(map_name)
 
+    async def get_map(self: Self) -> tuple[MapData, bytes]:
+        if self._live_map is not None:
+            self._trajectory = await self._get_trajectory()
+        return await super().get_map()
+
+    async def _get_trajectory(self: Self) -> list[dict[str, Any]]:
+        """The path so far, from the trajectory object property 7-2 names."""
+        if self._status_value in self._live_map.docked_at:
+            # Back on the dock, the trajectory is the last clean's.
+            return []
+        name = cloud_object_name(
+            self._get_live_property(self._live_map.trajectory_piid)
+        )
+        if name is None:
+            return []
+        raw_trajectory = await self.get_raw_map_data(name)
+        if raw_trajectory is None:
+            _LOGGER.debug("Failed to download trajectory %s", name)
+            return []
+        return decode_trajectory(raw_trajectory)
+
     def decode_and_parse(self, raw_map: bytes) -> MapData:
         # Try parsing as JSON first (old format), otherwise use raw data directly (new format)
         try:
@@ -223,9 +277,11 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             model=self.model.replace("xiaomi", "mi"),
             device_id=str(self._device_id),
         )
-        if self._live_map is not None:
-            decoded_map = self._with_live_data(decoded_map)
-        return self.map_data_parser.parse(decoded_map)
+        if self._live_map is None:
+            return self.map_data_parser.parse(decoded_map)
+        map_data = self.map_data_parser.parse(self._with_live_data(decoded_map))
+        self._draw_mop_runs(map_data)
+        return map_data
 
     def _with_live_data(self: Self, decoded_map: str) -> Any:
         """Merge what the vacuum publishes outside its map into the map's payload."""
@@ -240,10 +296,67 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             self._get_live_property(self._live_map.position_piid)
         )
         return place_vacuum(
-            payload,
+            with_path(payload, self._trajectory),
             position,
             docked=self._status_value in self._live_map.docked_at,
+            path=self._trajectory,
         )
+
+    def _draw_mop_runs(self: Self, map_data: MapData) -> None:
+        """Draw each mop run as a line of its own.
+
+        The parser joins every mopped point into one line, so the payload
+        reaches it without them and they are drawn here instead, after the
+        parser has drawn and rotated the image. For a quarter turn the rotation
+        is undone first, which a transpose does exactly, so the runs land on
+        the same pixels as the path, and then redone. Point.rotated() would put
+        them a pixel off, because it maps x to w - x where a transpose maps it
+        to w - 1 - x. Any other angle the parser rotates by resampling, which
+        no transpose undoes, so there the points are rotated instead.
+        """
+        runs = mop_runs(self._trajectory)
+        if not runs:
+            return
+        map_data.mop_path = Path(sum(len(run) for run in runs), 1, 0, runs)
+        image = map_data.image
+        if Drawable.MOP_PATH not in self._drawables or image is None or image.is_empty:
+            return
+
+        width = int(self._sizes.get_size(Size.MOP_PATH_WIDTH))
+        color = self._palette.get_color(SupportedColor.MOP_PATH)
+        rotation = image.dimensions.rotation
+
+        def to_image(point: Point) -> Point:
+            point = point.to_img(image.dimensions)
+            if rotation and rotation not in _UNROTATE:
+                point = point.rotated(image.dimensions)
+            return point
+
+        def draw_runs(draw) -> None:
+            for run in runs:
+                start = to_image(run[0])
+                for point in run[1:]:
+                    end = to_image(point)
+                    draw.line([start.x, start.y, end.x, end.y], width=width, fill=color)
+                    if width > 4:
+                        radius = width / 2
+                        corners = (
+                            (end.x - radius, end.y - radius),
+                            (
+                                end.x + radius,
+                                end.y + radius,
+                            ),
+                        )
+                        draw.pieslice(corners, 0, 360, outline=color, fill=color)
+                    start = end
+
+        if rotation in _UNROTATE:
+            image.data = image.data.transpose(_UNROTATE[rotation])
+        ImageGenerator._draw_on_new_layer(
+            image, draw_runs, ImageGenerator._use_transparency(color)
+        )
+        if rotation in _ROTATE:
+            image.data = image.data.transpose(_ROTATE[rotation])
 
     def _get_live_property(self: Self, piid: int) -> Any:
         try:
