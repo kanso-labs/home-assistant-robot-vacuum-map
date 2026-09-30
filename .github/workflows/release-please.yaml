@@ -1,0 +1,58 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+  # Releases are batched to one a day rather than one per merge. The push above
+  # keeps the release pull request current — its changelog and its version
+  # always reflect main — and this is the only trigger that turns merging on,
+  # through the auto-merge input below.
+  #
+  # 09:00 UTC is 06:00 America/Sao_Paulo. Every kanso-labs repository releases
+  # on this same cron.
+  #
+  # GitHub disables a scheduled workflow after 60 days without repository
+  # activity. Renovate's commits keep this one alive, but that is the shape a
+  # silent stop to releasing would take.
+  schedule:
+    - cron: '0 9 * * *'
+  # Neither trigger above can be asked to look again now: one waits for a push,
+  # the other for the clock. That matters when a release pull request has to be
+  # discarded, because release-please rewrites one only when the release it
+  # computes changes — so a pull request that cannot merge is not repaired by
+  # closing it, and nothing proposes a replacement until somebody happens to
+  # push. This is that lever.
+  workflow_dispatch:
+
+# Every release merge pushes main, and every push starts a run. Overlapping runs
+# try to cut the same tags and strip the same labels, and one dies on the
+# other's half-finished work. Do not add cancel-in-progress: the last push must
+# still get a run, or the release it carries is never proposed.
+#
+# This belongs to the caller. GitHub documents concurrency there and says
+# nothing either way about a group declared inside a called workflow.
+concurrency:
+  cancel-in-progress: false
+  group: release-please
+
+# The application token below does the writing, so GITHUB_TOKEN stays on read.
+permissions:
+  contents: read
+
+jobs:
+  # A release is all HACS needs: it offers a repository's GitHub releases and
+  # installs the tagged source, so there is nothing to build or upload here.
+  release-please:
+    name: Propose releases
+    uses: kanso-labs/actions/.github/workflows/_release-please.yaml@v4.0.2
+    with:
+      # True only on the scheduled run, which is what batches a day of merges
+      # into one release. A push proposes without merging, and so does
+      # workflow_dispatch — the lever above re-proposes a stuck release pull
+      # request rather than releasing on demand. To release sooner than the next
+      # scheduled run, enable auto-merge on the pull request by hand.
+      auto-merge: ${{ github.event_name == 'schedule' }}
+    secrets:
+      client-id: ${{ secrets.RELEASE_PLEASE_CLIENT_ID }}
+      private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}

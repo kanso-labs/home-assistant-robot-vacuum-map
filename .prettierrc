@@ -1,5 +1,11 @@
 {
   "arrowParens": "always",
+  "overrides": [
+    {
+      "files": "custom_components/xiaomi_cloud_map/manifest.json",
+      "options": { "parser": "json-stringify" }
+    }
+  ],
   "proseWrap": "always",
   "semi": false,
   "singleQuote": true,
