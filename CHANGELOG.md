@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.7.1...v0.8.0) (2026-09-30)
+
+
+### Features
+
+* draw the map at a higher resolution by default ([#76](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/76)) ([33c320d](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/33c320d18e606a720a148a4ab0a11a2af24aa5fe))
+
+
+### Bug Fixes
+
+* **xiaomi:** read the b108gl's position and restricted areas as it publishes them ([#73](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/issues/73)) ([268fcad](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/commit/268fcadb6a2a1d4a4aac7f19c8004e3e78b43f74))
+
 ## [0.7.1](https://github.com/kanso-labs/home-assistant-xiaomi-vacuum-map/compare/v0.7.0...v0.7.1) (2026-09-30)
 
 
