@@ -2,6 +2,7 @@
 
 import base64
 import json
+import math
 import struct
 import zlib
 from typing import Any
@@ -481,3 +482,16 @@ async def test_b108gl_keeps_its_raw_live_data_for_diagnostics() -> None:
         "7-4": "600,400,300",
     }
     assert base64.b64decode(data["trajectory_raw"]) == TRAJECTORY
+
+
+def test_b108gl_draws_the_robot_where_a_real_s20_plus_reports_it() -> None:
+    """The captured 7-4, taken as the robot drove home, places and turns it."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(2, 1): GO_CHARGING, (7, 4): '{"position":[-1290,-1810,870]}'})
+    assert vacuum.should_update_map
+
+    map_data = parse(vacuum, json_map())
+
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (-1290, -1810)
+    # 870 milliradians is 49.8 degrees, the way the robot was driving.
+    assert map_data.vacuum_position.a == pytest.approx(math.degrees(0.87))

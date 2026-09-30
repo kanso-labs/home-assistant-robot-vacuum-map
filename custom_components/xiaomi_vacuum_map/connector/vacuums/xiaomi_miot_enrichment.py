@@ -41,9 +41,11 @@ MIN_MOP_RUN_POINTS = 3
 # The keys an object may list restricted areas or walls under, and the keys a
 # region may list its points under, as upstream pull request #750 reads them,
 # with fb_point added, the key vacuum_map_parser_xiaomi 0.1.4 reads an area's
-# corners from in the Dreame-based Xiaomi models' maps.
+# corners from in the Dreame-based Xiaomi models' maps, and forbidden_regions,
+# the key a real S20+ lists its areas under in 2-11.
 _REGION_LIST_KEYS = (
     "areas",
+    "forbidden_regions",
     "zones",
     "regions",
     "walls",
@@ -69,10 +71,14 @@ _FB_ATTR_NO_MOP = 1
 def parse_vacuum_position(value: Any) -> dict[str, Any] | None:
     """Read a vacuum-position property into the map payload's position shape.
 
-    The property arrives as a JSON object or as "x,y,yaw" text. The yaw is
-    passed on in whatever unit it came in, because vacuum_map_parser_xiaomi
-    converts it to degrees itself, and converting it here as well would read a
-    small angle, already in degrees, as radians.
+    A real S20+ publishes {"position": [x, y, yaw]}, with the yaw in
+    milliradians. That yaw is handed on in radians: vacuum_map_parser_xiaomi
+    reads a yaw within 2π as radians and converts it whole, where it reads
+    larger values as hundredths of a degree and folds them into 0° to 180°.
+
+    The property may also arrive as a JSON object of x and y, or as "x,y,yaw"
+    text, the forms upstream pull request #750 reads. Their yaw is passed on in
+    whatever unit it came in, for the parser to convert once.
 
     Returns None when there is no position to draw: an empty value, the
     origin, or POSITION_UNKNOWN.
@@ -85,6 +91,14 @@ def parse_vacuum_position(value: Any) -> dict[str, Any] | None:
             value = json.loads(text)
         except json.JSONDecodeError:
             value = [part.strip() for part in text.split(",")]
+
+    if isinstance(value, dict) and isinstance(value.get("position"), list):
+        value = value["position"]
+        if len(value) > 2:
+            try:
+                value = [value[0], value[1], float(value[2]) / 1000]
+            except TypeError, ValueError:
+                value = value[:2]
 
     if isinstance(value, dict):
         x = _first(value, "x", "pos_x", "cur_x")
