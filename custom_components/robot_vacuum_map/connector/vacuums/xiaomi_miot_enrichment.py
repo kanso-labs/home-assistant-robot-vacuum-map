@@ -188,6 +188,25 @@ def cloud_object_name(value: Any) -> str | None:
     return None
 
 
+def cloud_object_index(value: Any) -> int | None:
+    """The index a MIoT property gives the cloud object it points at.
+
+    The b108gl sets it to the Unix time the object last changed. Only the JSON
+    form carries one: a bare name or path has none.
+    """
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+    if not isinstance(value, dict):
+        return None
+    index = value.get("index")
+    if isinstance(index, int) and not isinstance(index, bool):
+        return index
+    return None
+
+
 def decode_trajectory(raw: bytes) -> list[dict[str, Any]]:
     """Read a downloaded trajectory object into points, in the order visited.
 

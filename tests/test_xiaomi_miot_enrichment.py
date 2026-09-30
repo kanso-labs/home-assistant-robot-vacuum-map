@@ -10,6 +10,7 @@ import pytest
 from custom_components.robot_vacuum_map.connector.vacuums.xiaomi_miot_enrichment import (
     MAX_TRAJECTORY_COORDINATE,
     POSITION_UNKNOWN,
+    cloud_object_index,
     cloud_object_name,
     decode_trajectory,
     mop_runs,
@@ -129,6 +130,25 @@ def test_places_a_docked_robot_on_its_dock_whatever_its_path() -> None:
 def test_reads_the_cloud_object_name(value, expected) -> None:
     """Paths, JSON and bare names all come down to the object's name."""
     assert cloud_object_name(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ('{"index":1790794042,"obj_name":"1/123456789/3"}', 1790794042),
+        ({"index": 1790794042, "obj_name": "1/123456789/3"}, 1790794042),
+        ("1/123456789/1", None),
+        ('{"obj_name": "1/123456789/1"}', None),
+        ('{"index": "1790794042", "obj_name": "1/123456789/1"}', None),
+        ('{"index": true, "obj_name": "1/123456789/1"}', None),
+        ("1790794042", None),
+        (1790794042, None),
+        (None, None),
+    ],
+)
+def test_reads_the_cloud_object_index(value, expected) -> None:
+    """Only the JSON form carries an index, and only a whole number counts."""
+    assert cloud_object_index(value) == expected
 
 
 def records(*points: tuple[int, int, int]) -> bytes:
