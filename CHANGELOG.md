@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.9.0...v0.10.0) (2026-09-30)
+
+
+### Features
+
+* connect the map's device via Xiaomi Home's vacuum ([#81](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/81)) ([3b67af6](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/3b67af69cb87a52854f351a2743291f5d892cd9d))
+
 ## [0.9.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.8.0...v0.9.0) (2026-09-30)
 
 
