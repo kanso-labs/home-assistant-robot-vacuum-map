@@ -1,5 +1,4 @@
 {
-  "name": "Xiaomi Cloud Map",
-  "homeassistant": "not-a-version",
-  "zip_release": true
+  "homeassistant": "2026.3.0",
+  "name": "Xiaomi Cloud Map"
 }
