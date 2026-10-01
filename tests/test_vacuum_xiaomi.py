@@ -231,9 +231,13 @@ TRAJECTORY = trajectory(
 
 
 def stub_cloud(vacuum: XiaomiCloudVacuum, **objects: bytes) -> AsyncMock:
-    """Serve each cloud object by name, and decrypt the map to json_map()."""
-    download = AsyncMock(side_effect=lambda name: objects.get(name))
-    vacuum.get_raw_map_data = download
+    """Serve each cloud object by name, and decrypt the map to json_map().
+
+    An object's URL is its name, so the download returned is awaited with it.
+    """
+    vacuum.get_map_url = AsyncMock(side_effect=lambda name: name)
+    download = AsyncMock(side_effect=lambda url: objects.get(url))
+    vacuum._connector.get_raw_map_data = download
     vacuum._xiaomi_map_data_parser.unpack_map = MagicMock(
         return_value=json.dumps(json_map())
     )
@@ -328,6 +332,108 @@ async def test_b108gl_survives_a_trajectory_that_does_not_download() -> None:
 
     assert map_data.path is None
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
+
+
+def indexed(index: int, name: str) -> str:
+    """A 7-1 or 7-2 value as python-miio reads it: the object's path and index."""
+    return json.dumps({"index": index, "obj_name": f"1/123456789/{name}"})
+
+
+async def refresh_at(
+    vacuum: XiaomiCloudVacuum, map_index: int, trajectory_index: int, x: int
+):
+    """Refresh with 7-1 and 7-2 at these indexes, and the robot at x."""
+    stub_device(
+        vacuum,
+        {
+            (2, 1): SWEEPING,
+            (7, 1): indexed(map_index, "map_7"),
+            (7, 2): indexed(trajectory_index, "trajectory_7"),
+            (7, 4): json.dumps({"position": [x, 400, 0]}),
+        },
+    )
+    assert await vacuum.should_update_map()
+    map_data, _ = await vacuum.get_map()
+    return map_data
+
+
+@pytest.mark.parametrize(
+    ("map_index", "trajectory_index", "downloads"),
+    [
+        (1790794042, 1790794040, []),
+        (1790794054, 1790794040, ["map_7"]),
+        (1790794042, 1790794052, ["trajectory_7"]),
+        (1790794054, 1790794052, ["trajectory_7", "map_7"]),
+    ],
+    ids=["neither changed", "the map changed", "the path changed", "both changed"],
+)
+async def test_b108gl_downloads_only_what_changed(
+    map_index: int, trajectory_index: int, downloads: list[str]
+) -> None:
+    """An object whose index has not moved is neither asked for nor downloaded.
+
+    The map is still drawn afresh, with the robot where it is now.
+    """
+    vacuum = make_vacuum(B108GL)
+    download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    await refresh_at(vacuum, 1790794042, 1790794040, x=600)
+    download.reset_mock()
+    vacuum.get_map_url.reset_mock()
+
+    map_data = await refresh_at(vacuum, map_index, trajectory_index, x=900)
+
+    assert [call.args for call in vacuum.get_map_url.await_args_list] == [
+        (name,) for name in downloads
+    ]
+    assert [call.args for call in download.await_args_list] == [
+        (name,) for name in downloads
+    ]
+    assert len(map_data.path.path[0]) == 9
+    assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (900, 400)
+
+
+async def test_b108gl_downloads_an_object_with_no_index_every_time() -> None:
+    """Xiaomi Home gives 7-2 as a bare path, with no index to go by."""
+    vacuum = make_vacuum(B108GL)
+    download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    stub_device(
+        vacuum,
+        {
+            (2, 1): SWEEPING,
+            (7, 1): indexed(1790794042, "map_7"),
+            (7, 2): TRAJECTORY_OBJECT,
+        },
+    )
+
+    for _ in range(2):
+        assert await vacuum.should_update_map()
+        await vacuum.get_map()
+
+    assert [call.args for call in download.await_args_list] == [
+        ("trajectory_7",),
+        ("map_7",),
+        ("trajectory_7",),
+    ]
+
+
+async def test_b108gl_downloads_everything_again_after_a_failed_refresh() -> None:
+    """What was downloaded may be what failed, whatever its index says."""
+    vacuum = make_vacuum(B108GL)
+    download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    vacuum._xiaomi_map_data_parser.unpack_map.side_effect = [
+        ValueError("the map does not decrypt"),
+        json.dumps(json_map()),
+    ]
+    with pytest.raises(ValueError):
+        await refresh_at(vacuum, 1790794042, 1790794040, x=600)
+    download.reset_mock()
+
+    await refresh_at(vacuum, 1790794042, 1790794040, x=600)
+
+    assert [call.args for call in download.await_args_list] == [
+        ("trajectory_7",),
+        ("map_7",),
+    ]
 
 
 RED = (255, 0, 0, 255)

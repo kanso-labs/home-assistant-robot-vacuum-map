@@ -61,12 +61,13 @@ which on the Xiaomi Robot Vacuum S20+ is 5 cm to a cell.
 | **Live map** (image)                                          | The rendered map                                                       |
 | **Live map** (camera)                                         | The same map as a camera, for cards that need one. Disabled by default |
 | **Update map** (switch)                                       | Pauses and resumes automatic updates                                   |
-| **Force map update** (button)                                 | Downloads the map now                                                  |
+| **Force map update** (button)                                 | Updates the map now                                                    |
 | **Is map empty** (binary sensor)                              | Whether the last map came back empty                                   |
 | Positions, rooms, paths, zones, walls and obstacles (sensors) | One sensor for each element of the map                                 |
 
 The map is fetched every 10 seconds while the vacuum is working, and a few more
-times after it stops.
+times after it stops. On the Xiaomi Robot Vacuum S20+, a map or path that has
+not changed since the last update is drawn again rather than downloaded again.
 
 ## Supported vacuums
 

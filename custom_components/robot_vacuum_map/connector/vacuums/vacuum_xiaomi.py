@@ -24,6 +24,7 @@ from ..utils.exceptions import FailedConnectionException
 from .base.model import VacuumApi, VacuumConfig
 from .base.vacuum_v2 import BaseXiaomiCloudVacuumV2
 from .xiaomi_miot_enrichment import (
+    cloud_object_index,
     cloud_object_name,
     decode_trajectory,
     mop_runs,
@@ -48,6 +49,15 @@ _UNROTATE = {
     180: Transpose.ROTATE_180,
     270: Transpose.ROTATE_90,
 }
+
+
+@dataclass(frozen=True)
+class _CloudObject:
+    """A cloud object as downloaded, with the name and index it had then."""
+
+    name: str
+    index: int
+    raw: bytes
 
 
 @dataclass
@@ -210,6 +220,10 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._restricted_areas: Any = None
         self._restricted_walls: Any = None
         self._position: Any = None
+        # The last map and trajectory downloaded, each with the name and index
+        # its property gave it, and the index 7-1 gives the map it names now.
+        self._downloads: dict[str, _CloudObject] = {}
+        self._map_index: int | None = None
         # The last value read from each MIoT property, keyed siid-piid, and the
         # last trajectory object downloaded, both kept for diagnostics.
         self._property_values: dict[str, Any] = {}
@@ -279,6 +293,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
                 await self._read_property(self._vacuum_map.siid, self._vacuum_map.piid)
             ).get("value")
         self._remember(self._vacuum_map.siid, self._vacuum_map.piid, response)
+        self._map_index = cloud_object_index(response)
 
         if response is None:
             return await super().get_map_name()
@@ -299,9 +314,18 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
     async def get_map_url(self, map_name: str) -> str | None:
         return await self.get_fallback_map_url(map_name)
 
+    async def get_raw_map_data(self: Self, map_name: str | None) -> bytes | None:
+        return await self._download("map", map_name, self._map_index)
+
     async def get_map(self: Self) -> tuple[MapData, bytes]:
         await self._read_live_data()
-        return await super().get_map()
+        try:
+            return await super().get_map()
+        except Exception:
+            # What failed may be a download kept from an earlier refresh, so
+            # the next refresh downloads everything again.
+            self._downloads.clear()
+            raise
 
     async def _read_live_data(self: Self) -> None:
         """Read what the parse adds to the map from outside it."""
@@ -324,19 +348,45 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         if self._status_value in self._live_map.docked_at:
             # Back on the dock, the trajectory is the last clean's.
             return []
-        name = cloud_object_name(
-            await self._get_live_property(
-                self._live_map.siid, self._live_map.trajectory_piid
-            )
+        value = await self._get_live_property(
+            self._live_map.siid, self._live_map.trajectory_piid
         )
+        name = cloud_object_name(value)
         if name is None:
             return []
-        raw_trajectory = await self.get_raw_map_data(name)
+        raw_trajectory = await self._download(
+            "trajectory", name, cloud_object_index(value)
+        )
         if raw_trajectory is None:
             _LOGGER.debug("Failed to download trajectory %s", name)
             return []
         self._raw_trajectory = raw_trajectory
         return decode_trajectory(raw_trajectory)
+
+    async def _download(
+        self: Self, kind: str, name: str | None, index: int | None
+    ) -> bytes | None:
+        """A cloud object, downloaded again only once its index has moved.
+
+        The b108gl moves the index its property gives an object each time the
+        object changes, so while the index holds, the last download is still
+        the object. A property with no index, such as Xiaomi Home's bare 7-2,
+        downloads every time. No other model is known to keep an index so.
+        """
+        last = self._downloads.get(kind)
+        if (
+            self._live_map is not None
+            and last is not None
+            and (last.name, last.index) == (name, index)
+        ):
+            _LOGGER.debug("The %s is unchanged at index %d", kind, index)
+            return last.raw
+        raw = await super().get_raw_map_data(name)
+        if raw is None or name is None or index is None:
+            self._downloads.pop(kind, None)
+        else:
+            self._downloads[kind] = _CloudObject(name, index, raw)
+        return raw
 
     def decode_and_parse(self, raw_map: bytes) -> MapData:
         # Try parsing as JSON first (old format), otherwise use raw data directly (new format)
