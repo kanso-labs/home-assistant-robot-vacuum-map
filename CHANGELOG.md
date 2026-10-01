@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.12.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.11.0...v0.12.0) (2026-10-01)
+
+
+### Features
+
+* move the robot on the map between downloads ([#98](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/98)) ([aa4b77f](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/aa4b77f0140386c15838588bc97769464a3b30ea))
+
+
+### Bug Fixes
+
+* stop blocking Home Assistant while reading the vacuum ([#95](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/95)) ([a89b27c](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/a89b27cf899ec0044c9fd57747b90625cc15b071))
+
+
+### Performance Improvements
+
+* **xiaomi:** download the b108gl's map and path only when they change ([#96](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/96)) ([ff1a50c](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/ff1a50cbd1af40e48950daa5f73a430643fb9c95))
+
 ## [0.11.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.10.0...v0.11.0) (2026-09-30)
 
 
