@@ -272,3 +272,20 @@ cannot share a device.
 **`except A | B` does not catch anything.** Python raises `TypeError` when it
 matches an exception against a union; only a tuple works. ruff's `B030` reports
 it, and the connector carried one until ruff arrived.
+
+**CodeQL's RC4 alerts are dismissed, not fixed.**
+`py/weak-cryptographic-algorithm` flags `encrypt_rc4` and `decrypt_rc4` in
+`connector/xiaomi_cloud/utils.py`, but the cipher is Xiaomi's choice, not this
+integration's. Every call to `api.io.mi.com` goes through
+`execute_api_call_encrypted`, which names it in the
+`MIOT-ENCRYPT-ALGORITHM: ENCRYPT-RC4` header, and the cloud answers in RC4 too.
+Each request is keyed by the SHA-256 of the session's `ssecurity` and its own
+nonce, and travels over HTTPS, so TLS is what keeps it private. Alerts #9 to #12
+are dismissed as "Won't fix", with #94 as the reason. Excluding the rule instead
+would take CodeQL's advanced setup, and would hide it across the whole
+repository.
+
+Moving or renaming `utils.py` raises the alerts again under new numbers. Both
+renames did, and closed #1 to #8 as fixed although nothing had changed. The pull
+request that moves the file passes CodeQL all the same, since a rename adds no
+new code; the alerts appear once it merges. Dismiss them the same way.
