@@ -1,4 +1,6 @@
-"""Reading a vacuum's live properties from Xiaomi Home's entities."""
+"""Finding Xiaomi Home's device for a vacuum, and reading its live properties."""
+
+import logging
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -9,6 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.robot_vacuum_map.xiaomi_home import (
     XIAOMI_HOME_DOMAIN,
     XiaomiHomeProperties,
+    xiaomi_home_device_id,
 )
 
 # Unique ids as Xiaomi Home made them on a real S20+, with its device id.
@@ -99,3 +102,50 @@ async def test_watches_nothing_for_a_property_with_no_entity(
     stop = xiaomi_home.async_watch(9, 9, lambda event: None)
 
     stop()
+
+
+def logged_warnings(caplog: pytest.LogCaptureFixture) -> list[str]:
+    """The warnings logged, the way Home Assistant reports a deprecated call."""
+    return [
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno >= logging.WARNING
+    ]
+
+
+async def test_finds_xiaomi_home_s_device_for_the_vacuum(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """In whichever Xiaomi account's entry holds it, without a deprecated call."""
+    devices = dr.async_get(hass)
+    other_account = MockConfigEntry(domain=XIAOMI_HOME_DOMAIN)
+    other_account.add_to_hass(hass)
+    devices.async_get_or_create(
+        config_entry_id=other_account.entry_id,
+        identifiers={(XIAOMI_HOME_DOMAIN, "us_987654321")},
+    )
+    account = MockConfigEntry(domain=XIAOMI_HOME_DOMAIN)
+    account.add_to_hass(hass)
+    vacuum = devices.async_get_or_create(
+        config_entry_id=account.entry_id,
+        identifiers={(XIAOMI_HOME_DOMAIN, "us_123456789")},
+    )
+
+    assert xiaomi_home_device_id(hass, "us", "123456789") == vacuum.id
+    assert logged_warnings(caplog) == []
+
+
+async def test_finds_no_device_where_xiaomi_home_has_none(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Nor one another integration holds under Xiaomi Home's identifier."""
+    MockConfigEntry(domain=XIAOMI_HOME_DOMAIN).add_to_hass(hass)
+    other = MockConfigEntry(domain="other")
+    other.add_to_hass(hass)
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=other.entry_id,
+        identifiers={(XIAOMI_HOME_DOMAIN, "us_123456789")},
+    )
+
+    assert xiaomi_home_device_id(hass, "us", "123456789") is None
+    assert logged_warnings(caplog) == []
