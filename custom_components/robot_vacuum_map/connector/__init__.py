@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Self
 
 from aiohttp import ClientSession
+from vacuum_map_parser_base.map_data import MapData
 
 from .model import (
     XiaomiCloudMapExtractorConnectorConfiguration,
@@ -131,9 +132,42 @@ class XiaomiCloudMapExtractorConnector:
         _LOGGER.debug("Downloaded map.")
         if map_data is None:
             raise FailedMapDownloadException()
-        self._map_cache.map_data = map_data
-        self._map_cache.map_image = to_image(map_data)
+        self._draw(map_data)
         self._map_cache.map_data_raw = map_raw_data
+
+    def redraw(self: Self) -> bool:
+        """Draw the map again from its last download, with newer live data.
+
+        It asks nothing of the vacuum or the cloud, and draws nothing while
+        automatic updates are off. Returns whether there was anything to draw.
+        """
+        if (
+            not self._auto_update
+            or self._vacuum_connector is None
+            or self._map_cache.map_data is None
+            or self._map_cache.map_data_raw is None
+        ):
+            return False
+        map_data = self._vacuum_connector.redraw(self._map_cache.map_data_raw)
+        if map_data is None:
+            return False
+        map_data.map_name = self._map_cache.map_data.map_name
+        self._draw(map_data)
+        return True
+
+    def _draw(self: Self, map_data: MapData) -> None:
+        """Keep a drawn map, and note the time whenever its image changes."""
+        image = to_image(map_data)
+        self._map_cache.map_data = map_data
+        if image != self._map_cache.map_image:
+            self._map_cache.map_image = image
+            self._map_cache.last_image_update_timestamp = datetime.now()
+
+    def position_property(self: Self) -> tuple[int, int] | None:
+        """The MIoT property the vacuum publishes its position in, where known."""
+        return AVAILABLE_VACUUM_PLATFORMS.get(
+            self._used_api, UnsupportedCloudVacuum
+        ).position_property(self._config.model)
 
     def _is_authenticated(self: Self) -> bool:
         return self._cloud_connector.is_authenticated()

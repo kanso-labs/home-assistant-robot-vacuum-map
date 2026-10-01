@@ -69,6 +69,11 @@ The map is fetched every 10 seconds while the vacuum is working, and a few more
 times after it stops. On the Xiaomi Robot Vacuum S20+, a map or path that has
 not changed since the last update is drawn again rather than downloaded again.
 
+When Xiaomi's own integration, Xiaomi Home, also has the S20+, the robot moves
+on the map each time Xiaomi Home reports its position, about every 2 seconds,
+and its path follows it. The map is drawn again from its last download, so this
+asks nothing more of Xiaomi's cloud.
+
 ## Supported vacuums
 
 The map API is chosen from the vacuum's model when it is set up:

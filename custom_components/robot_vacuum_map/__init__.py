@@ -57,8 +57,10 @@ async def async_setup_entry(
     via_device_id = xiaomi_home_device_id(
         hass, xcme_configuration.server, xcme_configuration.device_id
     )
+    xiaomi_home = None
     if via_device_id is not None:
-        xcme_configuration.live_properties = XiaomiHomeProperties(hass, via_device_id)
+        xiaomi_home = XiaomiHomeProperties(hass, via_device_id)
+        xcme_configuration.live_properties = xiaomi_home
 
     def session_creator() -> ClientSession:
         return async_create_clientsession(hass)
@@ -74,6 +76,12 @@ async def async_setup_entry(
     entry.runtime_data = XiaomiCloudMapExtractorRuntimeData(
         xcme_update_coordinator, via_device_id
     )
+    if xiaomi_home is not None and (position := xcme_connector.position_property()):
+        # Xiaomi Home reports the robot's position far more often than the map
+        # is downloaded, so each report redraws the map from its last download.
+        entry.async_on_unload(
+            xiaomi_home.async_watch(*position, xcme_update_coordinator.async_redraw)
+        )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))

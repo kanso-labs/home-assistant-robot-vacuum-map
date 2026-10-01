@@ -48,10 +48,12 @@ class XiaomiCloudMapExtractorImageEntity(XiaomiCloudMapExtractorEntity, ImageEnt
 
     @property
     def image_last_updated(self: Self) -> datetime | None:
+        # The frontend fetches the image again only when this moves, so it
+        # follows the image, which moves with the robot, rather than the map.
         data = self._data()
         if data is None:
             return None
-        return data.last_real_update_timestamp
+        return data.last_image_update_timestamp
 
     @property
     def extra_state_attributes(self: Self) -> dict[str, Any]:

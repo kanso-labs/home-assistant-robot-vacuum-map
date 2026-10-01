@@ -771,3 +771,92 @@ async def test_b108gl_draws_the_robot_where_xiaomi_home_reports_it() -> None:
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (-1290, -1810)
     asked = {call.args for call in vacuum._miot_device.get_property_by.call_args_list}
     assert (7, 4) not in asked
+
+
+async def refreshed_with_xiaomi_home(activity: str) -> tuple:
+    """A b108gl refreshed through Xiaomi Home, with 7-2 a bare path as it gives it.
+
+    Returns the vacuum, Xiaomi Home, the raw map, and the cloud's download.
+    """
+    vacuum = make_vacuum(B108GL)
+    source = FakeXiaomiHome(
+        activity,
+        p7_1=MAP_OBJECT,
+        p7_2=TRAJECTORY_OBJECT,
+        p7_4='{"position":[600,400,0]}',
+    )
+    with_xiaomi_home(vacuum, source)
+    download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
+    assert await vacuum.should_update_map()
+    _, raw = await vacuum.get_map()
+    download.reset_mock()
+    vacuum._miot_device.get_property_by.reset_mock()
+    return vacuum, source, raw, download
+
+
+async def test_b108gl_moves_the_robot_between_downloads() -> None:
+    """Each position Xiaomi Home reports redraws the robot and extends its path.
+
+    The redraw starts from the last download, and asks nothing of the vacuum
+    or the cloud.
+    """
+    vacuum, source, raw, download = await refreshed_with_xiaomi_home("cleaning")
+
+    source.values[(7, 4)] = '{"position":[950,850,0]}'
+    first = vacuum.redraw(raw)
+    source.values[(7, 4)] = '{"position":[1000,900,0]}'
+    second = vacuum.redraw(raw)
+
+    assert (first.vacuum_position.x, first.vacuum_position.y) == (950, 850)
+    assert (second.vacuum_position.x, second.vacuum_position.y) == (1000, 900)
+    assert [(p.x, p.y) for p in second.path.path[0]][-3:] == [
+        (900, 800),
+        (950, 850),
+        (1000, 900),
+    ]
+    download.assert_not_awaited()
+    vacuum._miot_device.get_property_by.assert_not_called()
+
+
+async def test_b108gl_hands_the_path_back_to_the_next_download() -> None:
+    """The next refresh draws the path from the trajectory alone again."""
+    vacuum, source, raw, _ = await refreshed_with_xiaomi_home("cleaning")
+    source.values[(7, 4)] = '{"position":[950,850,0]}'
+    vacuum.redraw(raw)
+
+    assert await vacuum.should_update_map()
+    map_data, _ = await vacuum.get_map()
+
+    assert len(map_data.path.path[0]) == 9
+
+
+@pytest.mark.parametrize(
+    ("activity", "position"),
+    [
+        ("cleaning", '{"position":[600,400,0]}'),
+        ("docked", '{"position":[950,850,0]}'),
+        ("cleaning", None),
+    ],
+    ids=["the same position", "on the dock", "no position"],
+)
+async def test_b108gl_redraws_only_a_robot_that_moved(
+    activity: str, position: str | None
+) -> None:
+    """On the dock the robot is drawn there, wherever it says it is."""
+    vacuum, source, raw, _ = await refreshed_with_xiaomi_home(activity)
+    source.values[(7, 4)] = position
+
+    assert vacuum.redraw(raw) is None
+
+
+async def test_b108gl_redraws_nothing_without_xiaomi_home() -> None:
+    """The vacuum is never asked for a redraw, so without Xiaomi Home it waits."""
+    vacuum = make_vacuum(B108GL)
+    stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): '{"position":[600,400,0]}'})
+    stub_cloud(vacuum, **{"0": b"map"})
+    assert await vacuum.should_update_map()
+    _, raw = await vacuum.get_map()
+    stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): '{"position":[950,850,0]}'})
+
+    assert vacuum.redraw(raw) is None
+    vacuum._miot_device.get_property_by.assert_not_called()

@@ -58,6 +58,8 @@ class XiaomiCloudMapExtractorData:
     last_update_timestamp: datetime | None = None
     last_successful_update_timestamp: datetime | None = None
     last_real_update_timestamp: datetime | None = None
+    # When the image last changed, which a redraw does without a download.
+    last_image_update_timestamp: datetime | None = None
     status: XiaomiCloudMapExtractorConnectorStatus = (
         XiaomiCloudMapExtractorConnectorStatus.UNKNOWN
     )
@@ -109,6 +111,8 @@ class XiaomiCloudMapExtractorData:
             and self.last_successful_update_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             "last_real_update_timestamp": self.last_real_update_timestamp
             and self.last_real_update_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "last_image_update_timestamp": self.last_image_update_timestamp
+            and self.last_image_update_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             "status": self.status,
             # Beside the map rather than in it, so a refresh whose map did not
             # parse still shows what the vacuum reported.

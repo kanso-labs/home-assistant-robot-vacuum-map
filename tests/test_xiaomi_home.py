@@ -66,3 +66,36 @@ async def test_leaves_the_vacuum_to_answer_what_xiaomi_home_cannot(
     )
     hass.states.async_set(walls, "x" * 255)
     assert xiaomi_home.value(2, 12) is None
+
+
+async def test_watches_a_property_s_entity(
+    hass: HomeAssistant, xiaomi_home: XiaomiHomeProperties
+) -> None:
+    """Each change of the entity's state calls back, until the watch stops."""
+    changes = []
+    stop = xiaomi_home.async_watch(7, 4, changes.append)
+    entity_id = next(
+        entry.entity_id
+        for entry in er.async_entries_for_device(
+            er.async_get(hass), xiaomi_home._device_id
+        )
+        if entry.unique_id.endswith("_p_7_4")
+    )
+
+    hass.states.async_set(entity_id, '{"position":[400,-42,1739]}')
+    await hass.async_block_till_done()
+    stop()
+    hass.states.async_set(entity_id, '{"position":[800,-42,1739]}')
+    await hass.async_block_till_done()
+
+    assert [event.data["new_state"].state for event in changes] == [
+        '{"position":[400,-42,1739]}'
+    ]
+
+
+async def test_watches_nothing_for_a_property_with_no_entity(
+    xiaomi_home: XiaomiHomeProperties,
+) -> None:
+    stop = xiaomi_home.async_watch(9, 9, lambda event: None)
+
+    stop()
