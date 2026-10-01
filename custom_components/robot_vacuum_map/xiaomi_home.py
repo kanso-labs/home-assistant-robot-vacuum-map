@@ -32,11 +32,17 @@ def xiaomi_home_device_id(
 
     Xiaomi Home identifies a device by its cloud server and device id,
     slugified as "<server>_<device id>", both of which this integration keeps.
+    It makes a config entry per Xiaomi account and server, and each entry that
+    has the vacuum holds a device of its own for it, so the entries are
+    searched in turn and the first device found is the one returned.
     """
-    device = dr.async_get(hass).async_get_device(
-        identifiers={(XIAOMI_HOME_DOMAIN, slugify(f"{server}_{device_id}"))}
-    )
-    return device.id if device is not None else None
+    identifier = (XIAOMI_HOME_DOMAIN, slugify(f"{server}_{device_id}"))
+    devices = dr.async_get(hass)
+    for entry in hass.config_entries.async_entries(XIAOMI_HOME_DOMAIN):
+        device = devices.async_get_device_by_identifier(identifier, entry.entry_id)
+        if device is not None:
+            return device.id
+    return None
 
 
 class XiaomiHomeProperties:
