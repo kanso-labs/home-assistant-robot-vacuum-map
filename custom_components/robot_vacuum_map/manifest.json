@@ -23,5 +23,5 @@
     "vacuum-map-parser-ijai==0.1.1",
     "vacuum-map-parser-xiaomi==0.1.4"
   ],
-  "version": "0.11.0"
+  "version": "0.12.0"
 }
