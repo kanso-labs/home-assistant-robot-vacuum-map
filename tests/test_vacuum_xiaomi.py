@@ -76,50 +76,50 @@ def make_vacuum(model: str, **config: Any) -> XiaomiCloudVacuum:
     )
 
 
-def poll(vacuum: XiaomiCloudVacuum, status: int, times: int) -> list[bool]:
+async def poll(vacuum: XiaomiCloudVacuum, status: int, times: int) -> list[bool]:
     """Answer should_update_map `times` times with the vacuum at `status`."""
     vacuum._miot_device = MagicMock()
     vacuum._miot_device.get_property_by.return_value = [
         {"siid": 2, "piid": 1, "value": status}
     ]
-    return [vacuum.should_update_map for _ in range(times)]
+    return [await vacuum.should_update_map() for _ in range(times)]
 
 
 @pytest.mark.parametrize("status", [SWEEPING, GO_CHARGING, REMOTE, MAPPING])
-def test_b108gl_keeps_updating_while_it_moves(status: int) -> None:
+async def test_b108gl_keeps_updating_while_it_moves(status: int) -> None:
     """A clean keeps the map refreshing on every poll, however long it runs."""
     vacuum = make_vacuum(B108GL)
 
-    assert all(poll(vacuum, status, OFF_UPDATES + 10))
+    assert all(await poll(vacuum, status, OFF_UPDATES + 10))
     vacuum._miot_device.get_property_by.assert_called_with(2, 1)
 
 
 @pytest.mark.parametrize(
     "status", [IDLE, CHARGING, BREAK_CHARGING, PAUSED, CHARGED, UPDATING]
 )
-def test_b108gl_stops_updating_once_idle(status: int) -> None:
+async def test_b108gl_stops_updating_once_idle(status: int) -> None:
     """Idle, the map refreshes a few more times and then stops."""
     vacuum = make_vacuum(B108GL)
 
-    assert poll(vacuum, status, OFF_UPDATES + 2) == [True] * OFF_UPDATES + [
+    assert await poll(vacuum, status, OFF_UPDATES + 2) == [True] * OFF_UPDATES + [
         False,
         False,
     ]
 
 
-def test_b108gl_starts_updating_again_when_a_clean_starts() -> None:
+async def test_b108gl_starts_updating_again_when_a_clean_starts() -> None:
     """Moving again resets the idle count."""
     vacuum = make_vacuum(B108GL)
-    poll(vacuum, CHARGED, OFF_UPDATES + 2)
+    await poll(vacuum, CHARGED, OFF_UPDATES + 2)
 
-    assert poll(vacuum, SWEEPING, 1) == [True]
+    assert await poll(vacuum, SWEEPING, 1) == [True]
 
 
-def test_other_models_keep_the_parser_mapping() -> None:
+async def test_other_models_keep_the_parser_mapping() -> None:
     """Models without an override keep vacuum_map_parser_xiaomi's idle states."""
     vacuum = make_vacuum("xiaomi.vacuum.c102")
 
-    assert poll(vacuum, 4, OFF_UPDATES + 1)[-1] is False
+    assert (await poll(vacuum, 4, OFF_UPDATES + 1))[-1] is False
 
 
 def json_map(**extra: Any) -> dict[str, Any]:
@@ -152,55 +152,56 @@ def stub_device(
     vacuum._miot_device.get_property_by.side_effect = get_property_by
 
 
-def parse(vacuum: XiaomiCloudVacuum, payload: dict[str, Any]):
-    """Run decode_and_parse on a map that decrypts to `payload`."""
+async def parse(vacuum: XiaomiCloudVacuum, payload: dict[str, Any]):
+    """Parse a map that decrypts to `payload`, after the reads get_map makes."""
     vacuum._xiaomi_map_data_parser.unpack_map = MagicMock(
         return_value=json.dumps(payload)
     )
+    await vacuum._read_live_data()
     return vacuum.decode_and_parse(b"encrypted map")
 
 
-def test_b108gl_draws_the_robot_at_property_7_4() -> None:
+async def test_b108gl_draws_the_robot_at_property_7_4() -> None:
     """Cleaning, the robot is drawn where property 7-4 puts it."""
     vacuum = make_vacuum(B108GL)
     stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): '{"x": 600, "y": 400, "yaw": 300}'})
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (600, 400)
     # 300 is 3 degrees in hundredths, converted once, by the parser.
     assert map_data.vacuum_position.a == pytest.approx(3.0)
 
 
-def test_b108gl_draws_the_robot_on_its_dock_while_docked() -> None:
+async def test_b108gl_draws_the_robot_on_its_dock_while_docked() -> None:
     """Charged on the dock, the robot is drawn there, not at a stale position."""
     vacuum = make_vacuum(B108GL)
     stub_device(vacuum, {(2, 1): CHARGED, (7, 4): '{"x": 600, "y": 400, "yaw": 0}'})
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
 
 
-def test_b108gl_draws_the_robot_on_its_dock_when_7_4_is_unknown() -> None:
+async def test_b108gl_draws_the_robot_on_its_dock_when_7_4_is_unknown() -> None:
     """With no position to report, the robot is drawn on the dock."""
     vacuum = make_vacuum(B108GL)
     stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): "1100,1100,0"})
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (150, 250)
 
 
-def test_other_models_parse_the_map_as_it_comes() -> None:
+async def test_other_models_parse_the_map_as_it_comes() -> None:
     """Models with no live properties never read 7-4."""
     vacuum = make_vacuum("xiaomi.vacuum.c102")
     stub_device(vacuum, {(7, 4): '{"x": 600, "y": 400}'})
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert map_data.vacuum_position is None
     vacuum._miot_device.get_property_by.assert_not_called()
@@ -247,7 +248,7 @@ async def test_b108gl_draws_the_path_from_property_7_2() -> None:
         {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT, (7, 4): None},
     )
     download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
     map_data, _ = await vacuum.get_map()
 
@@ -279,7 +280,7 @@ async def test_b108gl_draws_no_stale_path_on_its_dock() -> None:
         {(2, 1): CHARGED, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT, (7, 4): None},
     )
     download = stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
     map_data, _ = await vacuum.get_map()
 
@@ -299,7 +300,7 @@ async def test_b108gl_draws_the_mop_runs_on_the_map() -> None:
             {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT},
         )
         stub_cloud(vacuum, map_7=b"map", trajectory_7=raw_trajectory)
-        assert vacuum.should_update_map
+        assert await vacuum.should_update_map()
         map_data, _ = await vacuum.get_map()
         return map_data.image.data.tobytes()
 
@@ -321,7 +322,7 @@ async def test_b108gl_survives_a_trajectory_that_does_not_download() -> None:
         {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT, (7, 4): None},
     )
     stub_cloud(vacuum, map_7=b"map")
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
     map_data, _ = await vacuum.get_map()
 
@@ -358,7 +359,7 @@ async def test_b108gl_draws_mop_runs_over_the_path_at_every_rotation(
             vacuum, {(2, 1): SWEEPING, (7, 1): MAP_OBJECT, (7, 2): TRAJECTORY_OBJECT}
         )
         stub_cloud(vacuum, map_7=b"map", trajectory_7=raw_trajectory)
-        assert vacuum.should_update_map
+        assert await vacuum.should_update_map()
         map_data, _ = await vacuum.get_map()
         image = map_data.image.data.convert("RGBA")
         pixels = [
@@ -387,33 +388,35 @@ AREA = "[[100, 100, 400, 100, 400, 300, 100, 300]]"
 WALL = "[[500, 100, 500, 800]]"
 
 
-def test_b108gl_draws_the_areas_and_walls_from_2_11_and_2_12() -> None:
+async def test_b108gl_draws_the_areas_and_walls_from_2_11_and_2_12() -> None:
     """The no-go areas and virtual walls set in the Xiaomi app are drawn."""
 
-    def parsed(areas: Any, walls: Any):
+    async def parsed(areas: Any, walls: Any):
         vacuum = make_vacuum(B108GL)
         stub_device(vacuum, {(2, 1): CHARGED, (2, 11): areas, (2, 12): walls})
-        assert vacuum.should_update_map
-        return parse(vacuum, json_map())
+        assert await vacuum.should_update_map()
+        return await parse(vacuum, json_map())
 
-    map_data = parsed(AREA, WALL)
+    map_data = await parsed(AREA, WALL)
 
     assert [area.as_list() for area in map_data.no_go_areas] == [
         [100, 100, 400, 100, 400, 300, 100, 300]
     ]
     assert [wall.as_list() for wall in map_data.walls] == [[500, 100, 500, 800]]
-    assert map_data.image.data.tobytes() != parsed(None, None).image.data.tobytes()
+    assert (
+        map_data.image.data.tobytes() != (await parsed(None, None)).image.data.tobytes()
+    )
 
 
-def test_b108gl_drops_areas_and_walls_once_removed() -> None:
+async def test_b108gl_drops_areas_and_walls_once_removed() -> None:
     """An area or wall removed in the Xiaomi app is gone at the next refresh."""
     vacuum = make_vacuum(B108GL)
     stub_device(vacuum, {(2, 1): SWEEPING, (2, 11): AREA, (2, 12): WALL})
-    assert vacuum.should_update_map
-    parse(vacuum, json_map())
+    assert await vacuum.should_update_map()
+    await parse(vacuum, json_map())
     stub_device(vacuum, {(2, 1): SWEEPING, (2, 11): "[]", (2, 12): ""})
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert map_data.no_go_areas == []
     assert map_data.walls == []
@@ -428,7 +431,7 @@ async def test_falls_back_to_the_default_map_name(value: Any) -> None:
     assert await vacuum.get_map_name() == "0"
 
 
-def test_b108gl_draws_a_no_mop_area_from_2_11() -> None:
+async def test_b108gl_draws_a_no_mop_area_from_2_11() -> None:
     """An area 2-11 marks as no-mop is drawn as one, not as no-go."""
     vacuum = make_vacuum(B108GL)
     stub_device(
@@ -441,9 +444,9 @@ def test_b108gl_draws_a_no_mop_area_from_2_11() -> None:
             ): '[{"id": 2, "fb_attr": 1, "fb_point": [100, 100, 400, 100, 400, 300, 100, 300]}]',
         },
     )
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert map_data.no_go_areas == []
     assert [area.as_list() for area in map_data.no_mopping_areas] == [
@@ -469,7 +472,7 @@ async def test_b108gl_keeps_its_raw_live_data_for_diagnostics() -> None:
         },
     )
     stub_cloud(vacuum, map_7=b"map", trajectory_7=TRAJECTORY)
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
     await vacuum.get_map()
     data = vacuum.additional_data()
@@ -485,13 +488,13 @@ async def test_b108gl_keeps_its_raw_live_data_for_diagnostics() -> None:
     assert base64.b64decode(data["trajectory_raw"]) == TRAJECTORY
 
 
-def test_b108gl_draws_the_robot_where_a_real_s20_plus_reports_it() -> None:
+async def test_b108gl_draws_the_robot_where_a_real_s20_plus_reports_it() -> None:
     """The captured 7-4, taken as the robot drove home, places and turns it."""
     vacuum = make_vacuum(B108GL)
     stub_device(vacuum, {(2, 1): GO_CHARGING, (7, 4): '{"position":[-1290,-1810,870]}'})
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (-1290, -1810)
     # 870 milliradians is 49.8 degrees, the way the robot was driving.
@@ -531,13 +534,13 @@ def stub_capture(
 
 
 @CAPTURES
-def test_b108gl_keeps_refreshing_through_a_captured_clean(
+async def test_b108gl_keeps_refreshing_through_a_captured_clean(
     capture: dict[str, Any],
 ) -> None:
     """Sweeping (4) and driving home (6) both keep the map refreshing."""
     vacuum = make_vacuum(B108GL)
 
-    assert all(poll(vacuum, capture["properties"]["2-1"], OFF_UPDATES + 2))
+    assert all(await poll(vacuum, capture["properties"]["2-1"], OFF_UPDATES + 2))
 
 
 @pytest.mark.parametrize(
@@ -551,7 +554,7 @@ async def test_b108gl_draws_a_captured_clean(
     """The real map, path, mop run and position come out as the robot had them."""
     vacuum = make_vacuum(B108GL)
     download = stub_capture(vacuum, capture)
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
     map_data, _ = await vacuum.get_map()
 
@@ -570,7 +573,7 @@ async def test_b108gl_puts_the_robot_on_the_captured_dock_once_charged() -> None
     """Docked, the robot sits on the real dock, with no path left over."""
     vacuum = make_vacuum(B108GL)
     download = stub_capture(vacuum, CAPTURE_GOING_HOME, {(2, 1): CHARGED})
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
     map_data, _ = await vacuum.get_map()
 
@@ -612,52 +615,52 @@ def with_xiaomi_home(vacuum: XiaomiCloudVacuum, source: FakeXiaomiHome) -> None:
         ("paused", PAUSED, True),
     ],
 )
-def test_b108gl_reads_its_status_from_xiaomi_home(
+async def test_b108gl_reads_its_status_from_xiaomi_home(
     activity: str, status: int, refreshes: bool
 ) -> None:
     """The activity stands in for the status, and the vacuum is not asked."""
     vacuum = make_vacuum(B108GL)
     with_xiaomi_home(vacuum, FakeXiaomiHome(activity))
 
-    assert vacuum.should_update_map is refreshes
+    assert await vacuum.should_update_map() is refreshes
     assert vacuum._status_value == status
     vacuum._miot_device.get_property_by.assert_not_called()
 
 
-def test_b108gl_counts_an_idle_robot_that_moved_as_remote_controlled() -> None:
+async def test_b108gl_counts_an_idle_robot_that_moved_as_remote_controlled() -> None:
     """Xiaomi Home reads remote control as idle; a moving position gives it away."""
     vacuum = make_vacuum(B108GL)
     source = FakeXiaomiHome("idle", p7_4='{"position":[0,0,0]}')
     with_xiaomi_home(vacuum, source)
-    polls = [vacuum.should_update_map for _ in range(OFF_UPDATES + 1)]
+    polls = [await vacuum.should_update_map() for _ in range(OFF_UPDATES + 1)]
     assert polls[-1] is False
 
     source.values[(7, 4)] = '{"position":[400,0,0]}'
 
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
     assert vacuum._status_value == REMOTE
 
 
-def test_b108gl_asks_the_vacuum_when_xiaomi_home_cannot_tell() -> None:
+async def test_b108gl_asks_the_vacuum_when_xiaomi_home_cannot_tell() -> None:
     vacuum = make_vacuum(B108GL)
     with_xiaomi_home(vacuum, FakeXiaomiHome(None))
     vacuum._miot_device.get_property_by.side_effect = lambda siid, piid: [
         {"siid": siid, "piid": piid, "value": SWEEPING}
     ]
 
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
     vacuum._miot_device.get_property_by.assert_called_with(2, 1)
 
 
-def test_b108gl_draws_the_robot_where_xiaomi_home_reports_it() -> None:
+async def test_b108gl_draws_the_robot_where_xiaomi_home_reports_it() -> None:
     """7-4 comes from Xiaomi Home's sensor, and the vacuum is not asked for it."""
     vacuum = make_vacuum(B108GL)
     with_xiaomi_home(
         vacuum, FakeXiaomiHome("cleaning", p7_4='{"position":[-1290,-1810,870]}')
     )
-    assert vacuum.should_update_map
+    assert await vacuum.should_update_map()
 
-    map_data = parse(vacuum, json_map())
+    map_data = await parse(vacuum, json_map())
 
     assert (map_data.vacuum_position.x, map_data.vacuum_position.y) == (-1290, -1810)
     asked = {call.args for call in vacuum._miot_device.get_property_by.call_args_list}

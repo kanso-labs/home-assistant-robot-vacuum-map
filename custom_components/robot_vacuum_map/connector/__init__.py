@@ -88,7 +88,7 @@ class XiaomiCloudMapExtractorConnector:
         self._last_hash = None
 
     async def get_data(self: Self) -> XiaomiCloudMapExtractorData:
-        if self._should_get_map():
+        if await self._should_get_map():
             _LOGGER.debug("Downloading new map.")
             await self._get_map()
         else:
@@ -154,14 +154,14 @@ class XiaomiCloudMapExtractorConnector:
             _LOGGER.error("Failed to retrieve model")
             raise DeviceNotFoundException()
 
-    def _should_get_map(self: Self) -> bool:
+    async def _should_get_map(self: Self) -> bool:
         if self._forced_refresh:
             self._forced_refresh = False
             return True
         return (
             self._map_cache is None
             or self._vacuum_connector is None
-            or (self._vacuum_connector.should_update_map and self._auto_update)
+            or (await self._vacuum_connector.should_update_map() and self._auto_update)
         )
 
     async def _get_map(self: Self) -> None:

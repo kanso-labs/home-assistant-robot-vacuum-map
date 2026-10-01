@@ -41,10 +41,9 @@ class RoborockCloudVacuum(BaseXiaomiCloudVacuum):
         api_response = await self._connector.execute_api_call_encrypted(url, params)
         return path_extractor(api_response, "result.url")
 
-    @property
-    def should_update_map(self: Self) -> bool:
+    async def should_update_map(self: Self) -> bool:
         try:
-            code = self._vacuum.status().state_code
+            code = (await self._in_executor(self._vacuum.status)).state_code
             _LOGGER.debug("Vacuum status: %d", code)
             is_moving = code in [
                 1,  # Starting
@@ -97,7 +96,7 @@ class RoborockCloudVacuum(BaseXiaomiCloudVacuum):
                 remaining_attempts,
             )
             try:
-                map_name = self._vacuum.map()[0]  # todo async
+                map_name = (await self._in_executor(self._vacuum.map))[0]
                 _LOGGER.debug("Map name %s", map_name)
                 if map_name != MISSING_MAP_VALUE:
                     return map_name
