@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.0...v0.12.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* find Xiaomi Home's vacuum without the deprecated device lookup ([#104](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/104)) ([26b5cb6](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/26b5cb6cf5af6db0ad21441348349a524913347f))
+
 ## [0.12.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.11.0...v0.12.0) (2026-10-01)
 
 
