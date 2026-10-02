@@ -27,7 +27,7 @@ test = [
   # vacuum-map-parser-ijai imports protobuf without declaring it. Home
   # Assistant's own images carry it, at the version its package constraints
   # pin, so the tests take that version too.
-  "protobuf==6.32.0",
+  "protobuf==6.33.5",
   # manifest.json's requirements, at the same pins. Home Assistant's test
   # harness never installs an integration's requirements, so the tests can
   # only import the integration if they are already here. Pillow is absent for
