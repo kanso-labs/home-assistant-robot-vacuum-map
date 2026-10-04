@@ -91,7 +91,7 @@ jobs:
       # Installs the Python and uv that .tool-versions pins, so this job and
       # a local run resolve the same versions.
       - name: Set up mise
-        uses: jdx/mise-action@v5.0.1
+        uses: jdx/mise-action@v5.1.0
 
       - name: Check Python formatting
         run: uv run --locked --only-group lint ruff format --check
