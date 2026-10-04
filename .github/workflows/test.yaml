@@ -27,7 +27,7 @@ jobs:
       # Installs the Python and uv that .tool-versions pins, so this job and
       # a local run resolve the same versions.
       - name: Set up mise
-        uses: jdx/mise-action@v5.0.1
+        uses: jdx/mise-action@v5.1.0
 
       - name: Run tests
         run: uv run --locked --no-default-groups --group test pytest
