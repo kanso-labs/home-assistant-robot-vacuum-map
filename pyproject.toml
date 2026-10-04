@@ -32,7 +32,7 @@ test = [
   # harness never installs an integration's requirements, so the tests can
   # only import the integration if they are already here. Pillow is absent for
   # the reason it is unpinned in the manifest: Home Assistant pins it itself.
-  "pybase64==1.5.0",
+  "pybase64==1.5.1",
   "pycryptodome==3.23.0",
   "python-miio==0.5.12",
   "vacuum-map-parser-base==0.1.5",
