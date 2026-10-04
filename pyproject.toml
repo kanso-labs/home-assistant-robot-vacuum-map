@@ -33,7 +33,7 @@ test = [
   # only import the integration if they are already here. Pillow is absent for
   # the reason it is unpinned in the manifest: Home Assistant pins it itself.
   "pybase64==1.5.1",
-  "pycryptodome==3.23.0",
+  "pycryptodome==3.24.0",
   "python-miio==0.5.12",
   "vacuum-map-parser-base==0.1.5",
   "vacuum-map-parser-dreame==0.1.3",

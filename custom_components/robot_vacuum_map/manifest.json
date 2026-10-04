@@ -14,7 +14,7 @@
     "Pillow",
     "pybase64==1.5.1",
     "python-miio==0.5.12",
-    "pycryptodome==3.23.0",
+    "pycryptodome==3.24.0",
     "vacuum-map-parser-base==0.1.5",
     "vacuum-map-parser-roborock==0.1.5",
     "vacuum-map-parser-viomi==0.1.3",
