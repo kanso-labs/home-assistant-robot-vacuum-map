@@ -125,7 +125,7 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Lint workflows
-        uses: kanso-labs/actions/lint-workflows@v4.2.0
+        uses: kanso-labs/actions/lint-workflows@v4.2.1
 
   # One job with a fixed name for the ruleset to require. It fails when any job
   # it needs did not succeed, so a job added above gates merges as soon as it
