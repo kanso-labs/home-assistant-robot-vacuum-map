@@ -152,6 +152,10 @@ repository, and `.github/renovate.json` shapes what it opens:
   not be installed.
 - **`.tool-versions`** is read by Renovate's `asdf` manager. Its `mise` manager
   reads only `mise.toml` files.
+- **Python takes patches but never a new minor.** Home Assistant runs the
+  integration on its own Python, 3.14 alone as of 2026.10, so the tests stay on
+  that line. The next minor moves by hand with the Home Assistant release that
+  adopts it, together with `requires-python` and ruff's `target-version`.
 
 `@renovate rebase` on one of its pull requests works through
 `.github/workflows/renovate-command.yaml`, which calls the shared

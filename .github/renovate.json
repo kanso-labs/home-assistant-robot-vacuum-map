@@ -39,6 +39,12 @@
       ]
     },
     {
+      "description": "Home Assistant runs the integration on its own Python, and 2026.10 declares Python 3.14 alone. The tests and lint run on .tool-versions' Python, so a new minor there would test on a Python no Home Assistant ships, whose dependencies may not even have wheels for it yet. Patches still come through. The next minor moves by hand, with the Home Assistant bump that adopts it, together with pyproject.toml's requires-python and ruff's target-version.",
+      "enabled": false,
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": ["major", "minor"]
+    },
+    {
       "description": "manifest.json's requirements are what an installed integration runs, so bumping one has to release it. Renovate's homeassistant-manifest manager reads them. Pillow is not among them, since Home Assistant depends on it itself. release-please releases only for feat and fix here, and the shared preset types every upgrade deps, which it hides. pyproject.toml pins the same packages for the tests, and both files land in one pull request because Renovate names the branch after the package.",
       "matchPackageNames": [
         "pybase64",
