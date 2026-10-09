@@ -65,7 +65,7 @@ jobs:
       # with no tag at all (#1). The tag is the Home Assistant release the
       # tests also run against, and Renovate moves the two together.
       - name: Validate with hassfest
-        uses: docker://ghcr.io/home-assistant/hassfest:2026.9.4
+        uses: docker://ghcr.io/home-assistant/hassfest:2026.10.0
 
   brand:
     name: Check the brand icon
