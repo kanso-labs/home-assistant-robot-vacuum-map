@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.3](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.2...v0.12.3) (2026-10-09)
+
+
+### Bug Fixes
+
+* stop pinning requirements Home Assistant already pins ([a5635d2](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/a5635d2ad44f2ab050c85d2d29f3dc64e6ac9e9e))
+
 ## [0.12.2](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.1...v0.12.2) (2026-10-05)
 
 
