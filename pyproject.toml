@@ -11,7 +11,7 @@ version = "0.0.0"
 # Split in two so the lint job installs ruff alone rather than Home Assistant.
 # A plain `uv run` installs both groups, which is what a local run wants.
 [dependency-groups]
-lint = ["ruff==0.16.10"]
+lint = ["ruff==0.17.0"]
 test = [
   # The Home Assistant release the tests run against, which the hassfest image
   # in lint.yaml also names. pytest-homeassistant-custom-component pins it too,
