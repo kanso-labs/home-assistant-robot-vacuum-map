@@ -28,10 +28,12 @@ test = [
   # Assistant's own images carry it, at the version its package constraints
   # pin, so the tests take that version too.
   "protobuf==6.33.5",
-  # manifest.json's requirements, at the same pins. Home Assistant's test
-  # harness never installs an integration's requirements, so the tests can
-  # only import the integration if they are already here. Pillow is absent for
-  # the reason it is unpinned in the manifest: Home Assistant pins it itself.
+  # manifest.json's requirements. Home Assistant's test harness never installs
+  # an integration's requirements, so the tests can only import the integration
+  # if they are already here. python-miio and vacuum-map-parser-roborock are at
+  # the pins Home Assistant's own integrations give them, which the manifest
+  # names only as minimums. Pillow is absent, as from the manifest, because
+  # Home Assistant depends on it itself.
   "pybase64==1.5.1",
   "pycryptodome==3.24.0",
   "python-miio==0.5.12",

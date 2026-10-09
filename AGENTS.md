@@ -87,10 +87,13 @@ first, then every copy.
 - **`manifest.json` keeps `domain` and `name` first**, because hassfest requires
   it, as `package.json` keeps `name` and `version` first. The other keys are
   ordered by name.
-- **A requirement Home Assistant already pins stays unpinned in
-  `manifest.json`**, Pillow first among them. Home Assistant installs an
-  integration's requirements under its own package constraints, so a second pin
-  would conflict with Home Assistant's the first time either moved. Every other
+- **A requirement Home Assistant already pins is not pinned in
+  `manifest.json`.** Home Assistant installs an integration's requirements under
+  its own package constraints, so a second pin would conflict with Home
+  Assistant's the first time either moved, and hassfest 2026.10 rejects one.
+  Pillow, which Home Assistant itself depends on, is left out altogether.
+  `python-miio` and `vacuum-map-parser-roborock`, which its `xiaomi_miio` and
+  `roborock` integrations pin, take that pin as a minimum, `>=`. Every other
   requirement is pinned exactly.
 
 **ruff formats and lints the Python, and Prettier the YAML, JSON and Markdown.**
@@ -136,15 +139,17 @@ The organization's runner in
 repository, and `.github/renovate.json` shapes what it opens:
 
 - **`manifest.json`'s requirements** are read by Renovate's own
-  `homeassistant-manifest` manager, which skips Pillow for carrying no version.
-  They are typed `fix`, and each lands in one pull request with its
-  `pyproject.toml` twin, because Renovate names the branch after the package.
+  `homeassistant-manifest` manager. They are typed `fix`, and each lands in one
+  pull request with its `pyproject.toml` twin, because Renovate names the branch
+  after the package.
 - **The hassfest image, `homeassistant` and
   `pytest-homeassistant-custom-component`** move together, in one "Home
   Assistant" pull request. The hassfest image is held to release tags.
-- **PyTurboJPEG and protobuf are never bumped.** They are pinned to what Home
-  Assistant itself pins, and move by hand with the Home Assistant bump that
-  changes those pins.
+- **PyTurboJPEG, protobuf, `python-miio` and `vacuum-map-parser-roborock` are
+  never bumped.** They are pinned to what Home Assistant itself pins, and move
+  by hand with the Home Assistant bump that changes those pins. For the last two
+  that is the manifest's minimum as well: one above Home Assistant's pin could
+  not be installed.
 - **`.tool-versions`** is read by Renovate's `asdf` manager. Its `mise` manager
   reads only `mise.toml` files.
 
@@ -229,9 +234,10 @@ the override in `.prettierrc`, every release pull request would fail
 
 **Home Assistant's test harness installs no requirements**, the integration's or
 its own components'. `pyproject.toml`'s test group therefore repeats
-`manifest.json`'s pins, and adds PyTurboJPEG, which Home Assistant's camera
-requires, and protobuf. A requirement bumped in one file and not the other
-leaves the tests running something no install does.
+`manifest.json`'s pins, taking Home Assistant's pin where the manifest names a
+minimum, and adds PyTurboJPEG, which Home Assistant's camera requires, and
+protobuf. A requirement bumped in one file and not the other leaves the tests
+running something no install does.
 
 **`vacuum-map-parser-ijai` imports protobuf without declaring it.** The
 connector imports every map API at start-up, so an install without protobuf

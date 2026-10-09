@@ -29,12 +29,17 @@
       ]
     },
     {
-      "description": "Pinned in pyproject.toml to what Home Assistant itself pins, PyTurboJPEG by its camera component and protobuf by its package constraints, only because its test harness installs neither. A newer release would test against something no Home Assistant ships, so these move by hand, with the Home Assistant bump that changes Home Assistant's own pin.",
+      "description": "Pinned in pyproject.toml to what Home Assistant itself pins, PyTurboJPEG by its camera component, protobuf by its package constraints, python-miio by its xiaomi_miio integration and vacuum-map-parser-roborock by its roborock one, because its test harness installs none of them. A newer release would test against something no Home Assistant ships. The last two are also manifest requirements, where hassfest allows them only as a minimum, and a minimum above Home Assistant's pin could not be installed. So these move by hand, with the Home Assistant bump that changes Home Assistant's own pin.",
       "enabled": false,
-      "matchPackageNames": ["protobuf", "pyturbojpeg"]
+      "matchPackageNames": [
+        "protobuf",
+        "python-miio",
+        "pyturbojpeg",
+        "vacuum-map-parser-roborock"
+      ]
     },
     {
-      "description": "manifest.json's requirements are what an installed integration runs, so bumping one has to release it. Renovate's homeassistant-manifest manager reads them, and skips Pillow, which carries no version because Home Assistant pins it. release-please releases only for feat and fix here, and the shared preset types every upgrade deps, which it hides. pyproject.toml pins the same packages for the tests, and both files land in one pull request because Renovate names the branch after the package.",
+      "description": "manifest.json's requirements are what an installed integration runs, so bumping one has to release it. Renovate's homeassistant-manifest manager reads them. Pillow is not among them, since Home Assistant depends on it itself. release-please releases only for feat and fix here, and the shared preset types every upgrade deps, which it hides. pyproject.toml pins the same packages for the tests, and both files land in one pull request because Renovate names the branch after the package.",
       "matchPackageNames": [
         "pybase64",
         "pycryptodome",
