@@ -45,7 +45,7 @@ jobs:
   # installs the tagged source, so there is nothing to build or upload here.
   release-please:
     name: Propose releases
-    uses: kanso-labs/actions/.github/workflows/_release-please.yaml@v4.2.2
+    uses: kanso-labs/actions/.github/workflows/_release-please.yaml@v4.2.3
     with:
       # True only on the scheduled run, which is what batches a day of merges
       # into one release. A push proposes without merging, and so does
