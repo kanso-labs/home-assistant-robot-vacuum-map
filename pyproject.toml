@@ -19,7 +19,7 @@ test = [
   # own version cannot say which. This pin is what makes a beta-built release
   # fail to lock rather than slip into the tests; Renovate moves the three
   # together.
-  "homeassistant==2026.10.0",
+  "homeassistant==2026.10.1",
   "pytest-homeassistant-custom-component==0.13.371",
   # Home Assistant's camera component requires this at this pin, and its test
   # harness installs no component's requirements, core ones included.
