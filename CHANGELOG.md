@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.8](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.7...v0.12.8) (2026-10-30)
+
+
+### Bug Fixes
+
+* render 7C unreachable map areas ([#178](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/178)) ([8a4ade4](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/8a4ade4d3185534da6696dd267b476b35320ebc0))
+
 ## [0.12.7](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.6...v0.12.7) (2026-10-25)
 
 
