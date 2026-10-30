@@ -364,7 +364,28 @@ class XiaomiCloudConnector:
         qr_data = await qr_response.read()
         self._long_polling_url = json_resp["lp"]
 
-        return qr_data, json_resp["loginUrl"]
+        return qr_data, await self._browser_login_url(json_resp["loginUrl"])
+
+    async def _browser_login_url(self: Self, login_url: str) -> str:
+        """The QR code's login link, as a browser that is signed out can use it.
+
+        loginUrl redirects to serviceLogin with the _json=true the QR request
+        asked for, which the redirect keeps, so a browser with no Xiaomi
+        session gets a JSON document instead of a sign-in form. The redirect is
+        resolved here and the flag dropped. callback and followup stay, since
+        they finish the long polling. Anything unexpected keeps loginUrl.
+        """
+        try:
+            response = await self._session_data.get(login_url, allow_redirects=False)
+            if (location := response.headers.get("Location")) is None:
+                return login_url
+            target = URL(location)
+            if "_json" not in target.query:
+                return login_url
+            return str(target.without_query_params("_json"))
+        except Exception:
+            _LOGGER.debug("Xiaomi cloud qr login - kept the login link as given")
+            return login_url
 
     async def login_with_qr_wait_for_completion(self: Self) -> None:
         try:
