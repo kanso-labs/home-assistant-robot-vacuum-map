@@ -1,6 +1,6 @@
 """The coordinator, which refreshes the map on a schedule and redraws it between."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -19,14 +19,14 @@ async def test_redraws_without_putting_the_next_refresh_off(
     A coordinator reschedules its refresh whenever it is handed new data, so a
     redraw that did would hold the downloads off for as long as the robot moved.
     """
-    connector = MagicMock()
-    connector.redraw.return_value = redrawn
+    connector = MagicMock(redraw=AsyncMock(return_value=redrawn))
     coordinator = XiaomiCloudMapExtractorDataUpdateCoordinator(hass, connector)
     listener = MagicMock()
     remove_listener = coordinator.async_add_listener(listener)
 
     with patch.object(coordinator, "_schedule_refresh") as schedule_refresh:
         coordinator.async_redraw(MagicMock())
+        await hass.async_block_till_done()
     remove_listener()
 
     assert listener.called is redrawn

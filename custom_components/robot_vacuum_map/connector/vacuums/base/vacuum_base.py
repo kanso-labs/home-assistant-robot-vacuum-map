@@ -91,7 +91,9 @@ class BaseXiaomiCloudVacuum(ABC):
             raise FailedMapDownloadException()
         _LOGGER.debug('Downloaded raw map: "%d".', len(raw_map_data))
         _LOGGER.debug("Parsing map...")
-        map_data = self.decode_and_parse(raw_map_data)
+        # Decrypting, parsing and drawing take long enough to hold up Home
+        # Assistant, so they run in the executor.
+        map_data = await self._in_executor(self.decode_and_parse, raw_map_data)
         _LOGGER.debug(
             "Parsed map: (%d x %d)",
             map_data.image.dimensions.height,
@@ -110,7 +112,7 @@ class BaseXiaomiCloudVacuum(ABC):
         map_url = await self.get_map_url(map_name)
         return await self._connector.get_raw_map_data(map_url)
 
-    def redraw(self: Self, raw_map: bytes) -> MapData | None:
+    async def redraw(self: Self, raw_map: bytes) -> MapData | None:
         """The map drawn again from its last download, with newer live data.
 
         It asks nothing of the vacuum or the cloud. None means there is nothing
