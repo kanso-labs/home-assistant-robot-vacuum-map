@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import logging
 from collections.abc import Callable
@@ -87,6 +88,9 @@ class XiaomiCloudMapExtractorConnector:
         self._forced_refresh = False
         self._auto_update = True
         self._last_hash = None
+        # A download and a redraw both parse and draw in the executor, from
+        # state each of them changes, so one waits for the other.
+        self._drawing = asyncio.Lock()
 
     async def get_data(self: Self) -> XiaomiCloudMapExtractorData:
         if await self._should_get_map():
@@ -127,37 +131,45 @@ class XiaomiCloudMapExtractorConnector:
             await self._initialize()
             _LOGGER.debug("Initialized.")
 
-        _LOGGER.debug("Downloading map...")
-        map_data, map_raw_data = await self._vacuum_connector.get_map()
-        _LOGGER.debug("Downloaded map.")
-        if map_data is None:
-            raise FailedMapDownloadException()
-        self._draw(map_data)
-        self._map_cache.map_data_raw = map_raw_data
+        async with self._drawing:
+            _LOGGER.debug("Downloading map...")
+            map_data, map_raw_data = await self._vacuum_connector.get_map()
+            _LOGGER.debug("Downloaded map.")
+            if map_data is None:
+                raise FailedMapDownloadException()
+            await self._draw(map_data)
+            self._map_cache.map_data_raw = map_raw_data
 
-    def redraw(self: Self) -> bool:
+    async def redraw(self: Self) -> bool:
         """Draw the map again from its last download, with newer live data.
 
         It asks nothing of the vacuum or the cloud, and draws nothing while
         automatic updates are off. Returns whether there was anything to draw.
         """
-        if (
-            not self._auto_update
-            or self._vacuum_connector is None
-            or self._map_cache.map_data is None
-            or self._map_cache.map_data_raw is None
-        ):
-            return False
-        map_data = self._vacuum_connector.redraw(self._map_cache.map_data_raw)
-        if map_data is None:
-            return False
-        map_data.map_name = self._map_cache.map_data.map_name
-        self._draw(map_data)
-        return True
+        async with self._drawing:
+            if (
+                not self._auto_update
+                or self._vacuum_connector is None
+                or self._map_cache.map_data is None
+                or self._map_cache.map_data_raw is None
+            ):
+                return False
+            map_data = await self._vacuum_connector.redraw(self._map_cache.map_data_raw)
+            if map_data is None:
+                return False
+            map_data.map_name = self._map_cache.map_data.map_name
+            await self._draw(map_data)
+            return True
 
-    def _draw(self: Self, map_data: MapData) -> None:
-        """Keep a drawn map, and note the time whenever its image changes."""
-        image = to_image(map_data)
+    async def _draw(self: Self, map_data: MapData) -> None:
+        """Keep a drawn map, and note the time whenever its image changes.
+
+        Encoding the image takes long enough to hold up Home Assistant, so it
+        runs in the executor.
+        """
+        image = await asyncio.get_running_loop().run_in_executor(
+            None, to_image, map_data
+        )
         self._map_cache.map_data = map_data
         if image != self._map_cache.map_image:
             self._map_cache.map_image = image

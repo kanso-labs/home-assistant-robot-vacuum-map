@@ -60,11 +60,18 @@ class XiaomiCloudMapExtractorDataUpdateCoordinator(
     def async_redraw(self: Self, _: Event[EventStateChangedData]) -> None:
         """Draw the map again from its last download, for a robot that moved.
 
-        The entities are told directly. async_set_updated_data would put the
-        next refresh off each time, and the downloads would stop while the
-        robot kept moving.
+        The drawing runs in the executor, so it is started here and finished in
+        a task of its own.
         """
-        if self.connector.redraw():
+        self.hass.async_create_background_task(self._async_redraw(), f"{DOMAIN} redraw")
+
+    async def _async_redraw(self: Self) -> None:
+        """Redraw, and tell the entities directly when anything was drawn.
+
+        async_set_updated_data would put the next refresh off each time, and
+        the downloads would stop while the robot kept moving.
+        """
+        if await self.connector.redraw():
             self.async_update_listeners()
 
     async def force_update_data(self) -> None:

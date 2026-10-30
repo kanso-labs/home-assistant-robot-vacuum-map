@@ -5,6 +5,7 @@ import json
 import math
 import pathlib
 import struct
+import threading
 import zlib
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -675,6 +676,25 @@ async def test_b108gl_draws_a_captured_clean(
     assert map_data.vacuum_position.a == pytest.approx(math.degrees(yaw / 1000))
 
 
+async def test_b108gl_parses_off_the_event_loop() -> None:
+    """Parsing and drawing a download or a redraw would hold up Home Assistant."""
+    vacuum, source, raw, _ = await refreshed_with_xiaomi_home("cleaning")
+    parse = vacuum.decode_and_parse
+    threads: list[threading.Thread] = []
+
+    def decode_and_parse(raw_map: bytes) -> Any:
+        threads.append(threading.current_thread())
+        return parse(raw_map)
+
+    vacuum.decode_and_parse = decode_and_parse
+    await vacuum.get_map()
+    source.values[(7, 4)] = '{"position":[950,850,0]}'
+    await vacuum.redraw(raw)
+
+    assert len(threads) == 2
+    assert threading.main_thread() not in threads
+
+
 async def test_b108gl_puts_the_robot_on_the_captured_dock_once_charged() -> None:
     """Docked, the robot sits on the real dock, with no path left over."""
     vacuum = make_vacuum(B108GL)
@@ -803,9 +823,9 @@ async def test_b108gl_moves_the_robot_between_downloads() -> None:
     vacuum, source, raw, download = await refreshed_with_xiaomi_home("cleaning")
 
     source.values[(7, 4)] = '{"position":[950,850,0]}'
-    first = vacuum.redraw(raw)
+    first = await vacuum.redraw(raw)
     source.values[(7, 4)] = '{"position":[1000,900,0]}'
-    second = vacuum.redraw(raw)
+    second = await vacuum.redraw(raw)
 
     assert (first.vacuum_position.x, first.vacuum_position.y) == (950, 850)
     assert (second.vacuum_position.x, second.vacuum_position.y) == (1000, 900)
@@ -822,7 +842,7 @@ async def test_b108gl_hands_the_path_back_to_the_next_download() -> None:
     """The next refresh draws the path from the trajectory alone again."""
     vacuum, source, raw, _ = await refreshed_with_xiaomi_home("cleaning")
     source.values[(7, 4)] = '{"position":[950,850,0]}'
-    vacuum.redraw(raw)
+    await vacuum.redraw(raw)
 
     assert await vacuum.should_update_map()
     map_data, _ = await vacuum.get_map()
@@ -846,7 +866,7 @@ async def test_b108gl_redraws_only_a_robot_that_moved(
     vacuum, source, raw, _ = await refreshed_with_xiaomi_home(activity)
     source.values[(7, 4)] = position
 
-    assert vacuum.redraw(raw) is None
+    assert await vacuum.redraw(raw) is None
 
 
 async def test_b108gl_redraws_nothing_without_xiaomi_home() -> None:
@@ -858,5 +878,5 @@ async def test_b108gl_redraws_nothing_without_xiaomi_home() -> None:
     _, raw = await vacuum.get_map()
     stub_device(vacuum, {(2, 1): SWEEPING, (7, 4): '{"position":[950,850,0]}'})
 
-    assert vacuum.redraw(raw) is None
+    assert await vacuum.redraw(raw) is None
     vacuum._miot_device.get_property_by.assert_not_called()

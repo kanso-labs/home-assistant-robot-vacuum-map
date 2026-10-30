@@ -443,7 +443,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             path=path,
         )
 
-    def redraw(self: Self, raw_map: bytes) -> MapData | None:
+    async def redraw(self: Self, raw_map: bytes) -> MapData | None:
         """The map drawn again, with the robot where Xiaomi Home now puts it.
 
         Only Xiaomi Home is read, never the vacuum. Each new position extends
@@ -460,7 +460,7 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
         self._position = position
         if (point := parse_vacuum_position(position)) is not None:
             self._path_since_trajectory.append({"x": point["x"], "y": point["y"]})
-        return self.decode_and_parse(raw_map)
+        return await self._in_executor(self.decode_and_parse, raw_map)
 
     def _draw_mop_runs(self: Self, map_data: MapData) -> None:
         """Draw each mop run as a line of its own.
