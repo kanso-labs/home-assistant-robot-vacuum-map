@@ -54,6 +54,9 @@ class XiaomiCloudConnectorConfig:
     expiration: datetime.datetime
     ssecurity: str = field(repr=False)
     device_id: str
+    # Renews the session without a password. Optional, so that a session
+    # stored before it was kept still loads.
+    pass_token: str | None = field(default=None, repr=False)
 
     @classmethod
     def from_dict(
@@ -170,6 +173,7 @@ class XiaomiCloudConnector:
         self._session_data = None
         self._long_polling_url = None
         self.device_id = generate_device_id()
+        self.pass_token: str | None = None
 
     async def create_session(self: Self) -> None:
         if self._session_data is not None and self._session_data.session is not None:
@@ -259,6 +263,7 @@ class XiaomiCloudConnector:
                 self._session_data.ssecurity = response_json["ssecurity"]
                 self._session_data.userId = response_json["userId"]
                 self._session_data.cUserId = response_json["cUserId"]
+                self.pass_token = response_json.get("passToken") or self.pass_token
                 max_age = int(response.cookies.get("userId").get("max-age"))
                 self._session_data.expiration = (
                     datetime.datetime.now() + datetime.timedelta(seconds=max_age)
@@ -431,6 +436,7 @@ class XiaomiCloudConnector:
 
         self._session_data.userId = json_resp["userId"]
         self._session_data.ssecurity = json_resp["ssecurity"]
+        self.pass_token = json_resp.get("passToken") or self.pass_token
 
         self._session_data.serviceToken = resp.cookies.get("serviceToken").value
         self._session_data.expiration = datetime.datetime.now() + datetime.timedelta(
@@ -768,6 +774,96 @@ class XiaomiCloudConnector:
 
         return True
 
+    async def login_with_pass_token(self: Self) -> bool:
+        """Renew the session with its passToken, without a password, captcha or 2FA.
+
+        A sign-in hands out a passToken that outlives its serviceToken by far,
+        and serviceLogin answers it with a new ssecurity and the location that
+        sets a new serviceToken. Returns whether the session was renewed; when
+        it was not, the session is left as it was.
+        """
+        pass_token = self._pass_token()
+        if (
+            pass_token is None
+            or self._session_data is None
+            or self._session_data.userId is None
+        ):
+            _LOGGER.debug("Xiaomi cloud passToken login - no passToken kept")
+            return False
+        _LOGGER.debug("Xiaomi cloud passToken login - step 1")
+        url = "https://account.xiaomi.com/pass/serviceLogin?sid=xiaomiio&_json=true"
+        cookies = {
+            "userId": str(self._session_data.userId),
+            "passToken": pass_token,
+            "deviceId": self.device_id,
+        }
+        try:
+            response = await self._session_data.get(url, cookies=cookies)
+            response_json = to_json(await response.text())
+        except Exception as e:
+            _LOGGER.debug("Xiaomi cloud passToken login - step 1 failed: %s", e)
+            return False
+        if (
+            response.status != 200
+            or response_json.get("code") != 0
+            or not response_json.get("ssecurity")
+            or not response_json.get("location")
+        ):
+            _LOGGER.warning(
+                "Xiaomi cloud passToken login rejected (status %s, code %s)",
+                response.status,
+                response_json.get("code"),
+            )
+            return False
+
+        _LOGGER.debug("Xiaomi cloud passToken login - step 2")
+        try:
+            sts_response = await self._session_data.get(response_json["location"])
+        except Exception as e:
+            _LOGGER.debug("Xiaomi cloud passToken login - step 2 failed: %s", e)
+            return False
+        service_token = sts_response.cookies.get("serviceToken")
+        if sts_response.status != 200 or service_token is None:
+            _LOGGER.warning(
+                "Xiaomi cloud passToken login - no serviceToken (status %s)",
+                sts_response.status,
+            )
+            return False
+
+        self._session_data.serviceToken = service_token.value
+        self._session_data.ssecurity = response_json["ssecurity"]
+        self._session_data.userId = response_json.get(
+            "userId", self._session_data.userId
+        )
+        self._session_data.cUserId = response_json.get(
+            "cUserId", self._session_data.cUserId
+        )
+        self.pass_token = response_json.get("passToken") or self._pass_token()
+        user_id_cookie = response.cookies.get("userId")
+        max_age = int(user_id_cookie.get("max-age") or 0) if user_id_cookie else 0
+        if max_age <= 0:
+            max_age = 20 * 24 * 60 * 60
+        self._session_data.expiration = datetime.datetime.now() + datetime.timedelta(
+            seconds=max_age
+        )
+        self._session_data.apply_from_parameters()
+        _LOGGER.info(
+            "Xiaomi cloud session renewed with its passToken, valid until %s",
+            self._session_data.expiration,
+        )
+        return True
+
+    def _pass_token(self: Self) -> str | None:
+        """The newest passToken: the session's cookie, else the one last kept.
+
+        A 2FA sign-in leaves it in the cookie jar alone.
+        """
+        if self._session_data is not None:
+            for cookie in self._session_data.session.cookie_jar:
+                if cookie.key == "passToken" and cookie.value:
+                    return cookie.value
+        return self.pass_token
+
     def is_authenticated(self: Self) -> bool:
         return self._session_data is not None and self._session_data.is_authenticated()
 
@@ -973,6 +1069,7 @@ class XiaomiCloudConnector:
             self._session_data.expiration,
             self._session_data.ssecurity,
             self.device_id,
+            self._pass_token(),
         )
 
     @staticmethod
@@ -983,6 +1080,7 @@ class XiaomiCloudConnector:
         connector._username = config.username
         connector._password = config.password
         connector.device_id = config.device_id
+        connector.pass_token = config.pass_token
 
         await connector.create_session()
 
