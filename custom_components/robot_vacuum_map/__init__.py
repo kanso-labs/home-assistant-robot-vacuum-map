@@ -23,6 +23,7 @@ from vacuum_map_parser_base.config.size import Size, Sizes
 from .connector import XiaomiCloudMapExtractorConnector
 from .connector.model import XiaomiCloudMapExtractorConnectorConfiguration
 from .connector.vacuums.base.model import VacuumApi
+from .connector.xiaomi_cloud.connector import XiaomiCloudConnectorConfig
 from .const import (
     CONF_COLORS,
     CONF_DRAWABLES,
@@ -40,7 +41,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import XiaomiCloudMapExtractorDataUpdateCoordinator
-from .store import restore_connector_config
+from .store import restore_connector_config, save_connector_config
 from .types import (
     XiaomiCloudMapExtractorConfigEntry,
     XiaomiCloudMapExtractorRuntimeData,
@@ -65,9 +66,12 @@ async def async_setup_entry(
     def session_creator() -> ClientSession:
         return async_create_clientsession(hass)
 
+    async def session_saver(config: XiaomiCloudConnectorConfig) -> None:
+        await save_connector_config(hass, xcme_configuration.mac, config)
+
     connector_config = await restore_connector_config(hass, xcme_configuration.mac)
     xcme_connector = XiaomiCloudMapExtractorConnector(
-        session_creator, xcme_configuration, connector_config
+        session_creator, xcme_configuration, connector_config, session_saver
     )
     xcme_update_coordinator = XiaomiCloudMapExtractorDataUpdateCoordinator(
         hass, xcme_connector
