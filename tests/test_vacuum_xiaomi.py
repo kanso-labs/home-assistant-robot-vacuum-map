@@ -161,6 +161,66 @@ async def parse(vacuum: XiaomiCloudVacuum, payload: dict[str, Any]):
     return vacuum.decode_and_parse(b"encrypted map")
 
 
+def test_qv41_masks_unreachable_pixels_before_parsing() -> None:
+    """The additional layer distinguishes unreachable space from room pixels."""
+    vacuum = make_vacuum("xiaomi.vacuum.qv41cn")
+
+    def compress(values: list[int]) -> str:
+        return base64.b64encode(zlib.compress(bytes(values))).decode()
+
+    payload = {
+        "width": 7,
+        "height": 1,
+        "map_data": compress([3, 3, 0, 3, 63, 64, 128]),
+        "additional_map_data": compress([0, 2, 2, 4, 2, 2, 2]),
+        "paths": {"points": [{"x": 1, "y": 2}]},
+    }
+    vacuum.map_data_parser.unpack_map = MagicMock(return_value=json.dumps(payload))
+    vacuum.map_data_parser.parse = MagicMock()
+
+    vacuum.decode_and_parse(b"encrypted map")
+
+    parsed = json.loads(vacuum.map_data_parser.parse.call_args.args[0])
+    assert list(zlib.decompress(base64.b64decode(parsed["map_data"]))) == [
+        3,
+        0,
+        0,
+        3,
+        0,
+        64,
+        128,
+    ]
+    assert parsed["paths"] == payload["paths"]
+
+
+@pytest.mark.parametrize("model", ["xiaomi.vacuum.c102", "xiaomi.vacuum.qv41gl"])
+def test_other_models_leave_the_additional_layer_unchanged(model: str) -> None:
+    vacuum = make_vacuum(model)
+    payload = json_map(additional_map_data="not valid")
+    decoded = json.dumps(payload)
+    vacuum.map_data_parser.unpack_map = MagicMock(return_value=decoded)
+    vacuum.map_data_parser.parse = MagicMock()
+
+    vacuum.decode_and_parse(b"encrypted map")
+
+    assert vacuum.map_data_parser.parse.call_args.args[0] == decoded
+
+
+@pytest.mark.parametrize(
+    "extra", [None, "not base64", base64.b64encode(zlib.compress(b"x")).decode()]
+)
+def test_qv41_invalid_additional_layer_keeps_original_map(extra: str | None) -> None:
+    vacuum = make_vacuum("xiaomi.vacuum.qv41cn")
+    payload = json_map(additional_map_data=extra)
+    decoded = json.dumps(payload)
+    vacuum.map_data_parser.unpack_map = MagicMock(return_value=decoded)
+    vacuum.map_data_parser.parse = MagicMock()
+
+    vacuum.decode_and_parse(b"encrypted map")
+
+    assert vacuum.map_data_parser.parse.call_args.args[0] == decoded
+
+
 async def test_b108gl_draws_the_robot_at_property_7_4() -> None:
     """Cleaning, the robot is drawn where property 7-4 puts it."""
     vacuum = make_vacuum(B108GL)

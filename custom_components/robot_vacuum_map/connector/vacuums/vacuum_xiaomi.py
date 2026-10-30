@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+import zlib
 from dataclasses import dataclass
 from typing import Any, Self
 
@@ -190,6 +191,40 @@ def _live_mapping(model: str) -> XiaomiVacuumLiveMapping | None:
     return next(
         (mapping for models, mapping in _LIVE_MAP_PROP if model in models), None
     )
+
+
+# These models mark unreachable pixels with 2 in their additional map layer.
+_UNREACHABLE_LAYER_MODELS = ("xiaomi.vacuum.qv41cn",)
+
+
+def _mask_qv41_unreachable(decoded_map: str) -> str:
+    """Mask unreachable pixels while retaining walls from the main map."""
+    try:
+        payload = json.loads(decoded_map)
+        width, height = payload["width"], payload["height"]
+        if (
+            not isinstance(width, int)
+            or not isinstance(height, int)
+            or width <= 0
+            or height <= 0
+        ):
+            return decoded_map
+        pixels = zlib.decompress(base64.b64decode(payload["map_data"], validate=True))
+        extra = zlib.decompress(
+            base64.b64decode(payload["additional_map_data"], validate=True)
+        )
+        if len(pixels) != width * height or len(extra) != len(pixels):
+            return decoded_map
+        # The Xiaomi JSON parser treats values above 63 as walls.
+        masked = bytes(
+            0 if flag == 2 and value <= 63 else value
+            for value, flag in zip(pixels, extra)
+        )
+        payload["map_data"] = base64.b64encode(zlib.compress(masked)).decode("ascii")
+        return json.dumps(payload)
+    except TypeError, ValueError, KeyError, zlib.error:
+        _LOGGER.debug("Could not apply 7C additional map layer")
+        return decoded_map
 
 
 class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
@@ -414,6 +449,8 @@ class XiaomiCloudVacuum(BaseXiaomiCloudVacuumV2):
             model=self.model.replace("xiaomi", "mi"),
             device_id=str(self._device_id),
         )
+        if self.model in _UNREACHABLE_LAYER_MODELS:
+            decoded_map = _mask_qv41_unreachable(decoded_map)
         if self._live_map is None:
             return self.map_data_parser.parse(decoded_map)
         map_data = self.map_data_parser.parse(self._with_live_data(decoded_map))
