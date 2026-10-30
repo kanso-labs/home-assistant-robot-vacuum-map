@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.8...v0.13.0) (2026-10-30)
+
+
+### Features
+
+* renew the Xiaomi cloud session with its passToken ([#187](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/187)) ([43f0606](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/43f0606eb979cd506d6fa93a80ce3a70830c1db0))
+
+
+### Bug Fixes
+
+* give the QR login's link a sign-in page a signed-out browser can use ([#186](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/186)) ([63040a0](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/63040a0868d50fb24deaba67da5308e5049a0536))
+* parse and draw the map off Home Assistant's event loop ([#185](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/185)) ([5f23e4e](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/5f23e4e03f9151b166a8cd20ae15e855fef8c2cf))
+* update the reauthenticated entry when the vacuum's host changed ([#184](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/184)) ([68854ee](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/68854eefbc23fe085a8eccf00649e7db04534c77))
+
 ## [0.12.8](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.12.7...v0.12.8) (2026-10-30)
 
 
