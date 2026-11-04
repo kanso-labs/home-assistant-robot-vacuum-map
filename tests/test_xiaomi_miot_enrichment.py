@@ -368,6 +368,50 @@ def test_keeps_the_regions_the_map_carries() -> None:
     assert payload["fb_regions"] == [carried, {"type": "wall", "points": WALL_POINTS}]
 
 
+MAP_AREA = {"id": 2, "fb_attr": 0, "fb_point": [100, 100, 400, 100, 400, 300, 100, 300]}
+MAP_WALL = {"id": 0, "wall_points": [500, 100, 500, 800]}
+
+
+def test_replaces_the_areas_and_walls_the_map_carries() -> None:
+    """A real S20+ lists them in its map too, and the properties win."""
+    payload = with_restricted_regions(
+        {"fb_regions": [MAP_AREA], "fb_walls": [MAP_WALL]},
+        '{"forbidden_regions":[[100, 100, 400, 100, 400, 300, 100, 300]]}',
+        '{"restricted_walls":[[500, 100, 500, 800]]}',
+    )
+
+    assert payload["fb_regions"] == [
+        {"type": "no_go", "points": CORNERS},
+        {"type": "wall", "points": WALL_POINTS},
+    ]
+    assert payload["fb_walls"] == []
+
+
+def test_replaces_the_map_s_regions_with_an_empty_list() -> None:
+    """An empty list means the areas or walls were removed since the upload."""
+    payload = with_restricted_regions(
+        {"fb_regions": [MAP_AREA], "fb_walls": [MAP_WALL]},
+        '{"forbidden_regions":[]}',
+        '{"restricted_walls":[]}',
+    )
+
+    assert payload["fb_regions"] == []
+    assert payload["fb_walls"] == []
+
+
+def test_keeps_the_map_s_walls_while_2_12_cannot_be_read() -> None:
+    """Only the kind of region a property lists replaces the map's own."""
+    map_wall_region = {"type": "wall", "points": WALL_POINTS}
+    payload = with_restricted_regions(
+        {"fb_regions": [MAP_AREA, map_wall_region], "fb_walls": [MAP_WALL]},
+        '{"forbidden_regions":[]}',
+        None,
+    )
+
+    assert payload["fb_regions"] == [map_wall_region]
+    assert payload["fb_walls"] == [MAP_WALL]
+
+
 def test_reads_a_no_mop_area_by_its_fb_attr() -> None:
     """An area whose fb_attr is 1 is a no-mop area, as the parser reads it in maps."""
     payload = with_restricted_regions(

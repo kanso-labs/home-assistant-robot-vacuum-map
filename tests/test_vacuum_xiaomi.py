@@ -736,6 +736,70 @@ async def test_b108gl_draws_a_captured_clean(
     assert map_data.vacuum_position.a == pytest.approx(math.degrees(yaw / 1000))
 
 
+# Captured from a real S20+ on 0.13.1, with two no-go areas, two no-mop areas
+# and two virtual walls set in the Xiaomi app: its map, decrypted, and the
+# properties a diagnostics download carried. The map lists the same areas and
+# walls as 2-11 and 2-12, as fb_regions and fb_walls.
+RESTRICTED = json.loads((FIXTURES / "restricted.json").read_text())
+RESTRICTED_NO_GO = [
+    [1220, 85, 1220, -3475, 2560, -3475, 2560, 85],
+    [-3405, -1030, -3405, -2305, -2130, -2305, -2130, -1030],
+]
+RESTRICTED_NO_MOP = [
+    [-3585, -3650, -3585, -4925, -2310, -4925, -2310, -3650],
+    [-90, -4255, -90, -5530, 1185, -5530, 1185, -4255],
+]
+RESTRICTED_WALLS = [[-1960, -9090, -1935, -7635], [480, -7705, 2880, -7705]]
+
+
+async def parse_restricted(
+    overrides: dict[tuple[int, int], Any] | None = None,
+) -> Any:
+    """Parse the captured map with the captured 2-11, 2-12 and 7-4."""
+    vacuum = make_vacuum(B108GL)
+    properties = {
+        tuple(int(part) for part in key.split("-")): value
+        for key, value in RESTRICTED["properties"].items()
+        if key in ("2-1", "2-11", "2-12", "7-4")
+    }
+    stub_device(vacuum, properties | (overrides or {}))
+    assert await vacuum.should_update_map()
+    return await parse(vacuum, RESTRICTED["map"])
+
+
+def as_lists(regions: list[Any]) -> list[list[float]]:
+    return [region.as_list() for region in regions]
+
+
+async def test_b108gl_draws_each_captured_area_and_wall_once() -> None:
+    """The areas and walls in both the map and 2-11 and 2-12 are drawn once."""
+    map_data = await parse_restricted()
+
+    assert as_lists(map_data.no_go_areas) == RESTRICTED_NO_GO
+    assert as_lists(map_data.no_mopping_areas) == RESTRICTED_NO_MOP
+    assert as_lists(map_data.walls) == RESTRICTED_WALLS
+
+
+async def test_b108gl_drops_the_map_s_areas_once_2_11_and_2_12_list_none() -> None:
+    """Removed in the app, they are gone before the map is uploaded again."""
+    map_data = await parse_restricted(
+        {(2, 11): '{"forbidden_regions":[]}', (2, 12): '{"restricted_walls":[]}'}
+    )
+
+    assert map_data.no_go_areas == []
+    assert map_data.no_mopping_areas == []
+    assert map_data.walls == []
+
+
+async def test_b108gl_draws_the_map_s_areas_while_2_11_and_2_12_are_unread() -> None:
+    """With no value for either property, the map's own areas and walls stand."""
+    map_data = await parse_restricted({(2, 11): None, (2, 12): None})
+
+    assert as_lists(map_data.no_go_areas) == RESTRICTED_NO_GO
+    assert as_lists(map_data.no_mopping_areas) == RESTRICTED_NO_MOP
+    assert as_lists(map_data.walls) == RESTRICTED_WALLS
+
+
 async def test_b108gl_parses_off_the_event_loop() -> None:
     """Parsing and drawing a download or a redraw would hold up Home Assistant."""
     vacuum, source, raw, _ = await refreshed_with_xiaomi_home("cleaning")

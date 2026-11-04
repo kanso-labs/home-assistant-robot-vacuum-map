@@ -1,0 +1,225 @@
+{
+  "map": {
+    "fb_regions": [
+      {
+        "fb_attr": 1,
+        "fb_point": [-3585, -3650, -3585, -4925, -2310, -4925, -2310, -3650],
+        "id": 0
+      },
+      {
+        "fb_attr": 1,
+        "fb_point": [-90, -4255, -90, -5530, 1185, -5530, 1185, -4255],
+        "id": 1
+      },
+      {
+        "fb_attr": 0,
+        "fb_point": [1220, 85, 1220, -3475, 2560, -3475, 2560, 85],
+        "id": 2
+      },
+      {
+        "fb_attr": 0,
+        "fb_point": [-3405, -1030, -3405, -2305, -2130, -2305, -2130, -1030],
+        "id": 3
+      }
+    ],
+    "fb_walls": [
+      {
+        "id": 0,
+        "wall_points": [-1960, -9090, -1935, -7635]
+      },
+      {
+        "id": 1,
+        "wall_points": [480, -7705, 2880, -7705]
+      }
+    ],
+    "have_pile": true,
+    "height": 245,
+    "map_data": "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",
+    "map_id": 12,
+    "map_room_info": [
+      {
+        "color": 2,
+        "grid_id": 3,
+        "room_id": 3
+      },
+      {
+        "color": 2,
+        "grid_id": 4,
+        "room_id": 4
+      },
+      {
+        "color": 1,
+        "grid_id": 5,
+        "room_id": 5
+      },
+      {
+        "color": 1,
+        "grid_id": 6,
+        "room_id": 6
+      },
+      {
+        "color": 2,
+        "grid_id": 7,
+        "room_id": 7
+      },
+      {
+        "color": 3,
+        "grid_id": 8,
+        "room_id": 8
+      },
+      {
+        "color": 3,
+        "grid_id": 9,
+        "room_id": 9
+      },
+      {
+        "color": 4,
+        "grid_id": 10,
+        "room_id": 10
+      },
+      {
+        "color": 1,
+        "grid_id": 11,
+        "room_id": 11
+      },
+      {
+        "color": 4,
+        "grid_id": 12,
+        "room_id": 12
+      },
+      {
+        "color": 3,
+        "grid_id": 13,
+        "room_id": 13
+      }
+    ],
+    "map_type": 1,
+    "origin_x": -4550,
+    "origin_y": -9250,
+    "pile_x": 304,
+    "pile_y": 219,
+    "pile_yaw": 7536,
+    "resolution": 50,
+    "room_attrs": [
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 3,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 3",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 4,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 4",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 5,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 5",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 6,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 6",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 7,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 7",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 8,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 8",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 4,
+        "id": 9,
+        "mop_mode": 0,
+        "on": true,
+        "room_name": "Room 9",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 10,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 10",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 11,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 11",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 12,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 12",
+        "water_level": 1
+      },
+      {
+        "clean_mode": 1,
+        "clean_times": 1,
+        "fan_level": 3,
+        "id": 13,
+        "mop_mode": 0,
+        "on": false,
+        "room_name": "Room 13",
+        "water_level": 1
+      }
+    ],
+    "width": 144
+  },
+  "properties": {
+    "2-1": 4,
+    "2-11": "{\"forbidden_regions\":[{\"id\":0,\"fb_attr\":1,\"fb_point\":[-3585,-3650,-3585,-4925,-2310,-4925,-2310,-3650]},{\"id\":1,\"fb_attr\":1,\"fb_point\":[-90,-4255,-90,-5530,1185,-5530,1185,-4255]},{\"id\":2,\"fb_attr\":0,\"fb_point\":[1220,85,1220,-3475,2560,-3475,2560,85]},{\"id\":3,\"fb_attr\":0,\"fb_point\":[-3405,-1030,-3405,-2305,-2130,-2305,-2130,-1030]}]}",
+    "2-12": "{\"restricted_walls\":[{\"id\":0,\"wall_points\":[-1960,-9090,-1935,-7635]},{\"id\":1,\"wall_points\":[480,-7705,2880,-7705]}]}",
+    "7-1": "{\"index\":1793800049,\"obj_name\":\"**REDACTED**/**REDACTED**/3\"}",
+    "7-2": "{\"index\":1793800047,\"obj_name\":\"**REDACTED**/**REDACTED**/1\"}",
+    "7-4": "{\"position\":[-1720,-130,3170]}"
+  }
+}
