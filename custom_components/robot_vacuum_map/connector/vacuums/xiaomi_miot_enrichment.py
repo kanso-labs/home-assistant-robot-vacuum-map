@@ -1,12 +1,13 @@
 """Live map data a Xiaomi vacuum publishes as MIoT properties, not in its map.
 
 The Xiaomi Robot Vacuum S20+ (xiaomi.vacuum.b108gl) keeps its rooms, its dock
-and its calibration in the cloud map, but not the robot, its path, or the
-restricted areas and walls set in the Xiaomi app: it publishes its position as
-MIoT property 7-4, names a trajectory object in the cloud as property 7-2, and
-publishes the areas and walls as properties 2-11 and 2-12. The functions here
-merge those into the map's JSON payload, in the shape vacuum_map_parser_xiaomi
-reads, before the parser draws it.
+and its calibration in the cloud map, but not the robot or its path: it
+publishes its position as MIoT property 7-4 and names a trajectory object in
+the cloud as property 7-2. The restricted areas and walls set in the Xiaomi app
+are in the map too, but only as of its last upload, and are published as they
+stand as properties 2-11 and 2-12. The functions here merge those into the
+map's JSON payload, in the shape vacuum_map_parser_xiaomi reads, before the
+parser draws it.
 
 Ported from xiaomi_miot_enrichment.py in upstream pull request #750, by almirus.
 """
@@ -248,25 +249,46 @@ def with_restricted_regions(
     """Return the map payload with the restricted areas and walls in it.
 
     They go into "fb_regions", the forbidden regions vacuum_map_parser_xiaomi
-    draws, after any the map carries itself. Each area becomes a region of
-    four corners, no-mop where its fb_attr says so and no-go otherwise, and
-    each wall a region of type "wall", whose ends the parser reads from its
-    first and third points. With nothing to add, the payload comes back as it
-    was.
+    draws. Each area becomes a region of four corners, no-mop where its fb_attr
+    says so and no-go otherwise, and each wall a region of type "wall", whose
+    ends the parser reads from its first and third points.
+
+    A real S20+ carries the same areas in its map, as "fb_regions", and the
+    same walls, as "fb_walls". The properties are read at every refresh and
+    the map only when it is downloaded, so where a property lists its regions,
+    even none, they replace the map's own; where it cannot be read, the map's
+    stay. With nothing to add or replace, the payload comes back as it was.
     """
-    regions = [
+    area_regions = [
         {"type": _area_type(item), "points": corners}
         for item, corners in _regions(areas, 4)
-    ] + [
+    ]
+    wall_regions = [
         {"type": "wall", "points": [ends[0], ends[0], ends[1], ends[1]]}
         for _, ends in _regions(walls, 2)
     ]
-    if not regions:
-        return payload
+    replace_areas = bool(area_regions) or _lists_regions(areas)
+    replace_walls = bool(wall_regions) or _lists_regions(walls)
+
     existing = payload.get("fb_regions")
     if not isinstance(existing, list):
         existing = []
-    return {**payload, "fb_regions": [*existing, *regions]}
+    kept = [
+        region
+        for region in existing
+        if not (
+            (replace_areas and _is_map_area(region))
+            or (replace_walls and _is_map_wall(region))
+        )
+    ]
+    drop_walls = replace_walls and bool(payload.get("fb_walls"))
+    if not area_regions and not wall_regions and kept == existing and not drop_walls:
+        return payload
+
+    updated = {**payload, "fb_regions": [*kept, *area_regions, *wall_regions]}
+    if drop_walls:
+        updated["fb_walls"] = []
+    return updated
 
 
 def mop_runs(points: list[dict[str, Any]]) -> list[list[Point]]:
@@ -332,6 +354,30 @@ def _regions(value: Any, corners: int) -> list[tuple[Any, list[dict[str, float]]
         for item in _region_items(value, corners)
         if (points := _region_points(item, corners)) is not None
     ]
+
+
+def _lists_regions(value: Any) -> bool:
+    """Whether a property's value is a list of regions, even an empty one."""
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return False
+    if isinstance(value, dict):
+        return any(isinstance(value.get(key), list) for key in _REGION_LIST_KEYS)
+    return isinstance(value, list)
+
+
+def _is_map_area(region: Any) -> bool:
+    """Whether a region the map carries is a restricted area."""
+    return isinstance(region, dict) and (
+        "fb_point" in region or region.get("type") in ("no_go", "no_mop")
+    )
+
+
+def _is_map_wall(region: Any) -> bool:
+    """Whether a region the map carries is a wall."""
+    return isinstance(region, dict) and region.get("type") == "wall"
 
 
 def _area_type(item: Any) -> str:
