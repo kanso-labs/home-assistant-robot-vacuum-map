@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.13.1...v0.13.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **xiaomi:** draw the b108gl's restricted areas and walls once ([#197](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/197)) ([c4b7468](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/c4b7468e9e62989a0c347fca1ced13aa09b3ec2b))
+
 ## [0.13.1](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.13.0...v0.13.1) (2026-11-03)
 
 
