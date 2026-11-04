@@ -144,7 +144,9 @@ repository, and `.github/renovate.json` shapes what it opens:
   after the package.
 - **The hassfest image, `homeassistant` and
   `pytest-homeassistant-custom-component`** move together, in one "Home
-  Assistant" pull request. The hassfest image is held to release tags.
+  Assistant" pull request. The hassfest image also carries every Home Assistant
+  beta, as `2026.10.0b7`, and Renovate's docker versioning reads the `b7` as a
+  prerelease, so it never offers one while the current tag is a release.
 - **PyTurboJPEG, protobuf, `python-miio` and `vacuum-map-parser-roborock` are
   never bumped.** They are pinned to what Home Assistant itself pins, and move
   by hand with the Home Assistant bump that changes those pins. For the last two
