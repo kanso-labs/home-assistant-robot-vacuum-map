@@ -15,12 +15,7 @@
   "extends": ["config:recommended", "local>kanso-labs/.github:renovate-config"],
   "packageRules": [
     {
-      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/",
-      "description": "Home Assistant tags its betas 2026.10.0b0 and the like, and the hassfest image carries them all. Docker versioning already reads the b0 as unstable; this states it outright, because a hassfest from a beta would validate against a Home Assistant the tests do not run.",
-      "matchPackageNames": ["ghcr.io/home-assistant/hassfest"]
-    },
-    {
-      "description": "The hassfest image, homeassistant and pytest-homeassistant-custom-component all name one Home Assistant release, so they move to the next one in one pull request. pytest-homeassistant-custom-component also publishes a release for every Home Assistant beta, under a version that cannot say so; the exact homeassistant pin in pyproject.toml makes such a release fail to lock instead of reaching the tests, and a failed lock fails CI, which keeps the shared automerge rule off it.",
+      "description": "The hassfest image, homeassistant and pytest-homeassistant-custom-component all name one Home Assistant release, so they move to the next one in one pull request. The hassfest image also carries every beta, tagged 2026.10.0b0 and the like, but Renovate's docker versioning reads the b0 as a prerelease and offers only stable releases while the current tag is one, so it never moves to a beta. pytest-homeassistant-custom-component also publishes a release for every Home Assistant beta, under a version that cannot say so; the exact homeassistant pin in pyproject.toml makes such a release fail to lock instead of reaching the tests, and a failed lock fails CI, which keeps the shared automerge rule off it.",
       "groupName": "Home Assistant",
       "matchPackageNames": [
         "ghcr.io/home-assistant/hassfest",
