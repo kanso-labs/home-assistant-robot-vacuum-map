@@ -179,6 +179,17 @@ shared workflow enables squash auto-merge for minor and patch updates and leaves
 majors for a person. Only `main`'s copy of the caller runs for a Dependabot pull
 request, so a change to it cannot be tried from a branch.
 
+`.github/dependabot.yaml` keeps Dependabot to security updates alone, with
+`open-pull-requests-limit: 0` on each entry, and sets the title prefix. A fix to
+a runtime dependency in the `uv` entry is typed `fix`, not `deps`: `deps` is
+hidden in this repository's changelog, so a security fix typed `deps` would
+never release, and HACS would offer installed instances nothing. Dependabot
+types a development-only dependency with `prefix-development`, set to `deps`,
+which releases nothing. `github-actions` takes `deps`. Dependabot's security
+updates can fail to resolve against the pins this repository holds to match
+Home Assistant (a pillow fix is one, `dependency_file_not_resolvable`); nothing
+here ignores them, and the pins move by hand with the Home Assistant bump.
+
 ## Upstream
 
 Upstream is
