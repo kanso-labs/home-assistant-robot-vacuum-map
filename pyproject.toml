@@ -14,20 +14,20 @@ version = "0.0.0"
 lint = ["ruff==0.17.4"]
 test = [
   # The Home Assistant release the tests run against, which the hassfest image
-  # in lint.yaml also names. pytest-homeassistant-custom-component pins it too,
-  # but it publishes a release for every Home Assistant beta as well, and its
-  # own version cannot say which. This pin is what makes a beta-built release
-  # fail to lock rather than slip into the tests; Renovate moves the three
+  # in lint.yaml also names. pytest-homeassistant is Home Assistant's own test
+  # harness, published from its core repository under the same version, and it
+  # pins homeassistant to that release itself. Both are named so the release
+  # reads the same in each place Renovate moves it, and it moves the three
   # together.
-  "homeassistant==2026.10.4",
-  "pytest-homeassistant-custom-component==0.13.375",
+  "homeassistant==2026.11.1",
+  "pytest-homeassistant==2026.11.1",
   # Home Assistant's camera component requires this at this pin, and its test
   # harness installs no component's requirements, core ones included.
   "PyTurboJPEG==1.8.3",
   # vacuum-map-parser-ijai imports protobuf without declaring it. Home
   # Assistant's own images carry it, at the version its package constraints
   # pin, so the tests take that version too.
-  "protobuf==6.33.5",
+  "protobuf==7.36.0",
   # Measures the coverage the test workflow uploads. The harness above already
   # pulls it in, but the workflow depends on its flags, so it is pinned here
   # rather than left to whatever the harness happens to require.
@@ -50,9 +50,15 @@ test = [
   "vacuum-map-parser-xiaomi==0.1.4",
 ]
 
+# pytest-homeassistant's own settings. Its hass fixture enables custom
+# integrations by itself. respx's pytest plugin is turned off so that Home
+# Assistant can install its httpx alias before respx is imported; the harness's
+# HTTP mocks still use respx directly.
 [tool.pytest.ini_options]
+addopts = "-p no:respx"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
+pythonpath = ["."]
 testpaths = ["tests"]
 
 # The workflow passes --cov and the report path, so a plain `uv run pytest`

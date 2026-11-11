@@ -6,7 +6,7 @@ from homeassistant.config_entries import SOURCE_REAUTH
 from homeassistant.const import CONF_HOST, CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 from vacuum_map_parser_base.config.size import Size, Sizes
 
 from custom_components.robot_vacuum_map.config_flow import (

@@ -20,7 +20,7 @@ see Upstream.
 | `custom_components/robot_vacuum_map/`           | The integration: config and options flows, coordinator, entities             |
 | `custom_components/robot_vacuum_map/connector/` | Upstream's cloud connector, and one vacuum class per map API                 |
 | `custom_components/robot_vacuum_map/brand/`     | The icon and logo, which Home Assistant 2026.3 and later serves from here    |
-| `tests/`                                        | pytest, through `pytest-homeassistant-custom-component`                      |
+| `tests/`                                        | pytest, through Home Assistant's own `pytest-homeassistant`                  |
 | `blueprints/`                                   | Upstream's automations, written for v2's YAML camera and not re-tested on v3 |
 | `images/`                                       | What `README.md` shows                                                       |
 
@@ -33,14 +33,14 @@ map** switch.
 Everything runs from the repository root, after `mise install` has put the
 Python and uv that `.tool-versions` pins on the path.
 
-| Task                           | Command                                                                                | Notes                                                           |
-| ------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Install the tools              | `mise install`                                                                         |                                                                 |
-| Run the tests                  | `uv run pytest`                                                                        | Against Home Assistant 2026.9.4                                 |
-| Lint Python                    | `uv run ruff check`                                                                    | `Lint Python` runs this in CI                                   |
-| Format Python                  | `uv run ruff format`                                                                   | CI runs it with `--check`                                       |
-| Format YAML, JSON and Markdown | `npx prettier --write .`                                                               | CI checks at the version `lint.yaml` pins in `PRETTIER_VERSION` |
-| Validate with hassfest         | `docker run --rm -v "$PWD:/github/workspace" ghcr.io/home-assistant/hassfest:2026.9.4` | The image and tag `lint.yaml` runs                              |
+| Task                           | Command                                                                                 | Notes                                                           |
+| ------------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Install the tools              | `mise install`                                                                          |                                                                 |
+| Run the tests                  | `uv run pytest`                                                                         | Against Home Assistant 2026.11.1                                |
+| Lint Python                    | `uv run ruff check`                                                                     | `Lint Python` runs this in CI                                   |
+| Format Python                  | `uv run ruff format`                                                                    | CI runs it with `--check`                                       |
+| Format YAML, JSON and Markdown | `npx prettier --write .`                                                                | CI checks at the version `lint.yaml` pins in `PRETTIER_VERSION` |
+| Validate with hassfest         | `docker run --rm -v "$PWD:/github/workspace" ghcr.io/home-assistant/hassfest:2026.11.1` | The image and tag `lint.yaml` runs                              |
 
 HACS validation runs only in CI, as `Validate with HACS`. It reads the
 repository through the GitHub API at the pushed ref, so there is nothing for it
@@ -148,11 +148,11 @@ repository, and `.github/renovate.json` shapes what it opens:
   `homeassistant-manifest` manager. They are typed `fix`, and each lands in one
   pull request with its `pyproject.toml` twin, because Renovate names the branch
   after the package.
-- **The hassfest image, `homeassistant` and
-  `pytest-homeassistant-custom-component`** move together, in one "Home
-  Assistant" pull request. The hassfest image also carries every Home Assistant
-  beta, as `2026.10.0b7`, and Renovate's docker versioning reads the `b7` as a
-  prerelease, so it never offers one while the current tag is a release.
+- **The hassfest image, `homeassistant` and `pytest-homeassistant`** move
+  together, in one "Home Assistant" pull request. The hassfest image also
+  carries every Home Assistant beta, as `2026.10.0b7`, and Renovate's docker
+  versioning reads the `b7` as a prerelease, so it never offers one while the
+  current tag is a release.
 - **PyTurboJPEG, protobuf, `python-miio` and `vacuum-map-parser-roborock` are
   never bumped.** They are pinned to what Home Assistant itself pins, and move
   by hand with the Home Assistant bump that changes those pins. For the last two
@@ -278,10 +278,15 @@ cannot load the integration at all. Home Assistant's container image carries it,
 because its `requirements_all.txt` pulls it in, but a bare Home Assistant Core
 install may not.
 
-**`pytest-homeassistant-custom-component` publishes a release for every Home
-Assistant beta**, and its version cannot say so. `pyproject.toml` pins
-`homeassistant` exactly beside it, so a beta-built release fails to lock instead
-of slipping into the tests.
+**The tests use `pytest-homeassistant`, not
+`pytest-homeassistant-custom-component`.** The second, a community package,
+stopped at Home Assistant 2026.10.4 when Home Assistant began publishing its own
+harness from `packages/pytest-homeassistant` in its core repository, and its
+README now calls itself broken. The new one is versioned as the Home Assistant
+release it pins, so Renovate's PEP 440 versioning reads a beta, `2026.11.0b4`,
+as one and does not offer it. Its `hass` fixture enables custom integrations by
+itself, and it wants respx's pytest plugin off, which `addopts` in
+`pyproject.toml` does. The two cannot be installed together.
 
 **Once a release exists, HACS validates the latest release as well as the ref.**
 The first release pull request was merged seconds before its tag was readable,

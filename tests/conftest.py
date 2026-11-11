@@ -14,7 +14,7 @@ from homeassistant.const import (
     CONF_TOKEN,
     CONF_USERNAME,
 )
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 from vacuum_map_parser_base.config.drawable import Drawable
 from vacuum_map_parser_base.config.size import Sizes
 
@@ -37,11 +37,6 @@ from custom_components.robot_vacuum_map.const import (
 )
 
 MAC = "aa:bb:cc:dd:ee:ff"
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
-    """Let Home Assistant load the integration from custom_components/."""
 
 
 @pytest.fixture
