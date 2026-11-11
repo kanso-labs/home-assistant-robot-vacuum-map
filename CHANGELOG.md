@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.4](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.13.3...v0.13.4) (2026-11-11)
+
+
+### Bug Fixes
+
+* update dependency pybase64 to v1.5.2 ([#209](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/209)) ([2dfdb71](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/2dfdb713b430461065edff5c25e4fa3f0a16fcf8))
+
 ## [0.13.3](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.13.2...v0.13.3) (2026-11-08)
 
 
