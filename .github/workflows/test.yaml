@@ -8,6 +8,7 @@ on:
       - main
 
 permissions:
+  code-quality: write
   contents: read
 
 # See lint.yaml: a newer push supersedes an older run, except on main.
@@ -30,7 +31,27 @@ jobs:
         uses: jdx/mise-action@v5.2.7
 
       - name: Run tests
-        run: uv run --locked --no-default-groups --group test pytest
+        run: >-
+          uv run --locked --no-default-groups --group test pytest
+          --cov=custom_components/robot_vacuum_map --cov-report=term
+          --cov-report=xml:coverage/cobertura-coverage.xml
+
+      # fail-on-error is false because the action's default, true, makes this
+      # step wait up to 160 seconds for a service GitHub ships as public preview
+      # and fail if the upload errored or never finished processing. `Confirm
+      # tests succeeded` is a required check, so that default would put every
+      # merge behind an upload, with the tests already green. The failure is
+      # still reported, as an annotation. A missing report or an invalid input
+      # still fails the step.
+      #
+      # Once, here, rather than per leg: the job has no matrix.
+      - name: Upload coverage report
+        uses: actions/upload-code-coverage@v1.4.4
+        with:
+          fail-on-error: false
+          file: coverage/cobertura-coverage.xml
+          label: code-coverage/pytest
+          language: Python
 
   # The fixed name the ruleset requires, as in lint.yaml.
   confirm:

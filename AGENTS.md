@@ -46,6 +46,12 @@ HACS validation runs only in CI, as `Validate with HACS`. It reads the
 repository through the GitHub API at the pushed ref, so there is nothing for it
 to check before a push.
 
+The `Test` workflow measures coverage with `pytest-cov` and uploads it to GitHub
+as `code-coverage/pytest`, so a ruleset can gate on it. `fail-on-error` is off
+on the upload, so an outage there cannot hold up a merge behind green tests.
+`uv run pytest` alone measures nothing; add
+`--cov=custom_components/robot_vacuum_map` to see the table.
+
 There is no root `package.json`, so there is no `format` script. Prettier runs
 through `npx`, as in `home-assistant-applications`.
 
