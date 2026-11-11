@@ -186,9 +186,9 @@ hidden in this repository's changelog, so a security fix typed `deps` would
 never release, and HACS would offer installed instances nothing. Dependabot
 types a development-only dependency with `prefix-development`, set to `deps`,
 which releases nothing. `github-actions` takes `deps`. Dependabot's security
-updates can fail to resolve against the pins this repository holds to match
-Home Assistant (a pillow fix is one, `dependency_file_not_resolvable`); nothing
-here ignores them, and the pins move by hand with the Home Assistant bump.
+updates can fail to resolve against the pins this repository holds to match Home
+Assistant (a pillow fix is one, `dependency_file_not_resolvable`); nothing here
+ignores them, and the pins move by hand with the Home Assistant bump.
 
 ## Upstream
 
