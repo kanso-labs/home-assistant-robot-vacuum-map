@@ -1,4 +1,4 @@
-name: Renovate Command
+name: Renovate command
 
 # Renovate has no comment commands of its own, so `@renovate rebase` on one of
 # its pull requests would sit unanswered until the next scheduled run, up to

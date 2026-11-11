@@ -237,8 +237,8 @@ A `!` marks a breaking change, which also takes a minor below 1.0.0.
 
 Work lands as stacked pull requests, each based on the one below it. `Lint` and
 `Test` run on every pull request for that reason, not only on those into `main`,
-and the `Default` ruleset requires `Confirm lint succeeded` and
-`Confirm tests succeeded` before anything merges into `main`.
+and the `Default` ruleset requires `Lint` and `Test` before anything merges into
+`main`.
 
 Write branch commits conventionally anyway. They are what a reviewer reads while
 the pull request is open, even though only the title survives the merge.
