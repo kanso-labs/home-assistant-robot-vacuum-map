@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   test:
-    name: Run tests
+    name: Run pytest
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,8 +38,8 @@ jobs:
 
       # fail-on-error is false because the action's default, true, makes this
       # step wait up to 160 seconds for a service GitHub ships as public preview
-      # and fail if the upload errored or never finished processing. `Confirm
-      # tests succeeded` is a required check, so that default would put every
+      # and fail if the upload errored or never finished processing. `Test`
+      # is a required check, so that default would put every
       # merge behind an upload, with the tests already green. The failure is
       # still reported, as an annotation. A missing report or an invalid input
       # still fails the step.
@@ -55,7 +55,7 @@ jobs:
 
   # The fixed name the ruleset requires, as in lint.yaml.
   confirm:
-    name: Confirm tests succeeded
+    name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs:

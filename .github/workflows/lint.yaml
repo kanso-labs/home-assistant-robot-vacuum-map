@@ -131,7 +131,7 @@ jobs:
   # it needs did not succeed, so a job added above gates merges as soon as it
   # is listed here, with no change to the ruleset.
   confirm:
-    name: Confirm lint succeeded
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs:
