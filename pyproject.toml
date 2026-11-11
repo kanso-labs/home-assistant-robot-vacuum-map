@@ -28,6 +28,10 @@ test = [
   # Assistant's own images carry it, at the version its package constraints
   # pin, so the tests take that version too.
   "protobuf==6.33.5",
+  # Measures the coverage the test workflow uploads. The harness above already
+  # pulls it in, but the workflow depends on its flags, so it is pinned here
+  # rather than left to whatever the harness happens to require.
+  "pytest-cov==7.1.0",
   # manifest.json's requirements. Home Assistant's test harness never installs
   # an integration's requirements, so the tests can only import the integration
   # if they are already here. python-miio and vacuum-map-parser-roborock are at
@@ -50,6 +54,14 @@ test = [
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+# The workflow passes --cov and the report path, so a plain `uv run pytest`
+# stays fast and prints no table. What is measured is set here, so both agree:
+# `source` counts a module no test imports as zero rather than leaving it out of
+# the total, and branch coverage is reported beside line coverage.
+[tool.coverage.run]
+branch = true
+source = ["custom_components/robot_vacuum_map"]
 
 [tool.ruff]
 target-version = "py314"
