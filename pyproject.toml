@@ -34,7 +34,7 @@ test = [
   # the pins Home Assistant's own integrations give them, which the manifest
   # names only as minimums. Pillow is absent, as from the manifest, because
   # Home Assistant depends on it itself.
-  "pybase64==1.5.1",
+  "pybase64==1.5.2",
   "pycryptodome==4.4.0",
   "python-miio==0.5.12",
   "vacuum-map-parser-base==0.1.5",
