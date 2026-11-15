@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.5](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.13.4...v0.13.5) (2026-11-15)
+
+
+### Bug Fixes
+
+* update dependency pycryptodome to v4.5.0 ([#226](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/issues/226)) ([7ce7991](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/commit/7ce799120aa36a895823407c712c42513137b7bd))
+
 ## [0.13.4](https://github.com/kanso-labs/home-assistant-robot-vacuum-map/compare/v0.13.3...v0.13.4) (2026-11-11)
 
 
