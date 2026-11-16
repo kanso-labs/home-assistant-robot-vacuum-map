@@ -19,8 +19,8 @@ test = [
   # pins homeassistant to that release itself. Both are named so the release
   # reads the same in each place Renovate moves it, and it moves the three
   # together.
-  "homeassistant==2026.11.1",
-  "pytest-homeassistant==2026.11.1",
+  "homeassistant==2026.11.2",
+  "pytest-homeassistant==2026.11.2",
   # Home Assistant's camera component requires this at this pin, and its test
   # harness installs no component's requirements, core ones included.
   "PyTurboJPEG==1.8.3",
