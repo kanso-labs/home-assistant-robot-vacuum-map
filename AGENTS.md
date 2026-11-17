@@ -117,7 +117,7 @@ release is cut.
 release-please cuts them, through the shared workflow in
 [`kanso-labs/actions`](https://github.com/kanso-labs/actions), which
 `.github/workflows/release-please.yaml` calls at a pinned tag, as the siblings
-do. A push to `main` keeps the release pull request current, the daily 09:00 UTC
+do. A push to `main` keeps the release pull request current, the daily 12:15 UTC
 run is the only one that merges it, and `workflow_dispatch` re-proposes a stuck
 one.
 
