@@ -123,7 +123,7 @@ CI runs these four on every pull request, and each runs the same locally:
 ```shell
 uv run ruff format --check  # Python formatting
 uv run ruff check           # Python lint
-uv run pytest               # the tests, against Home Assistant 2026.9.4
+uv run pytest               # the tests, against pyproject.toml's Home Assistant
 npx prettier --check .      # YAML, JSON and Markdown
 ```
 
