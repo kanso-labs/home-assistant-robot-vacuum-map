@@ -33,14 +33,14 @@ map** switch.
 Everything runs from the repository root, after `mise install` has put the
 Python and uv that `.tool-versions` pins on the path.
 
-| Task                           | Command                                                                                 | Notes                                                           |
-| ------------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Install the tools              | `mise install`                                                                          |                                                                 |
-| Run the tests                  | `uv run pytest`                                                                         | Against Home Assistant 2026.11.1                                |
-| Lint Python                    | `uv run ruff check`                                                                     | `Lint Python` runs this in CI                                   |
-| Format Python                  | `uv run ruff format`                                                                    | CI runs it with `--check`                                       |
-| Format YAML, JSON and Markdown | `npx prettier --write .`                                                                | CI checks at the version `lint.yaml` pins in `PRETTIER_VERSION` |
-| Validate with hassfest         | `docker run --rm -v "$PWD:/github/workspace" ghcr.io/home-assistant/hassfest:2026.11.1` | The image and tag `lint.yaml` runs                              |
+| Task                           | Command                                                                                                                        | Notes                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Install the tools              | `mise install`                                                                                                                 |                                                                 |
+| Run the tests                  | `uv run pytest`                                                                                                                | Against the Home Assistant release `pyproject.toml` pins        |
+| Lint Python                    | `uv run ruff check`                                                                                                            | `Lint Python` runs this in CI                                   |
+| Format Python                  | `uv run ruff format`                                                                                                           | CI runs it with `--check`                                       |
+| Format YAML, JSON and Markdown | `npx prettier --write .`                                                                                                       | CI checks at the version `lint.yaml` pins in `PRETTIER_VERSION` |
+| Validate with hassfest         | `docker run --rm -v "$PWD:/github/workspace" "$(grep -o 'ghcr.io/home-assistant/hassfest:[^ ]*' .github/workflows/lint.yaml)"` | The image and tag `lint.yaml` runs, read from it                |
 
 HACS validation runs only in CI, as `Validate with HACS`. It reads the
 repository through the GitHub API at the pushed ref, so there is nothing for it
