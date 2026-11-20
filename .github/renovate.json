@@ -34,9 +34,9 @@
       ]
     },
     {
-      "description": "Home Assistant runs the integration on its own Python, and 2026.10 declares Python 3.14 alone. The tests and lint run on .tool-versions' Python, so a new minor there would test on a Python no Home Assistant ships, whose dependencies may not even have wheels for it yet. Patches still come through. The next minor moves by hand, with the Home Assistant bump that adopts it, together with pyproject.toml's requires-python and ruff's target-version.",
+      "description": "Home Assistant runs the integration on its own Python, and 2026.11 declares Python 3.14 alone. The tests and lint run on .tool-versions' Python, so a new minor there would test on a Python no Home Assistant ships, whose dependencies may not even have wheels for it yet. Patches still come through. The next minor moves by hand, with the Home Assistant bump that adopts it, together with pyproject.toml's requires-python and ruff's target-version. It matches the dependency name: Renovate's asdf manager looks Python up as the GitHub tags of python/cpython, so that is its package name, and a rule on matchPackageNames python matched nothing and let 3.15 through.",
       "enabled": false,
-      "matchPackageNames": ["python"],
+      "matchDepNames": ["python"],
       "matchUpdateTypes": ["major", "minor"]
     },
     {

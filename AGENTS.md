@@ -161,9 +161,13 @@ repository, and `.github/renovate.json` shapes what it opens:
 - **`.tool-versions`** is read by Renovate's `asdf` manager. Its `mise` manager
   reads only `mise.toml` files.
 - **Python takes patches but never a new minor.** Home Assistant runs the
-  integration on its own Python, 3.14 alone as of 2026.10, so the tests stay on
+  integration on its own Python, 3.14 alone as of 2026.11, so the tests stay on
   that line. The next minor moves by hand with the Home Assistant release that
-  adopts it, together with `requires-python` and ruff's `target-version`.
+  adopts it, together with `requires-python` and ruff's `target-version`. The
+  rule matches `matchDepNames`, not `matchPackageNames`: the `asdf` manager
+  looks Python up as the GitHub tags of `python/cpython`, which is its package
+  name, so a rule on the package name `python` matched nothing and let 3.15.0 in
+  through #124.
 
 `@renovate rebase` on one of its pull requests works through
 `.github/workflows/renovate-command.yaml`, which calls the shared
