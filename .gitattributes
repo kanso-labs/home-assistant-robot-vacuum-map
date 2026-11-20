@@ -1,0 +1,5 @@
+# Check every text file out with LF, on every platform. Prettier and ruff both
+# expect LF, so a CRLF working tree from a Windows checkout would fail their
+# checks on every file before reaching anything real, and a CRLF in a workflow's
+# run: block leaves a stray carriage return on every command.
+* text=auto eol=lf
