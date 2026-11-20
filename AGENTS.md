@@ -93,6 +93,11 @@ first, then every copy.
 - **`manifest.json` keeps `domain` and `name` first**, because hassfest requires
   it, as `package.json` keeps `name` and `version` first. The other keys are
   ordered by name.
+- **The blueprints keep upstream's order**, because it carries meaning there:
+  Home Assistant shows a blueprint's inputs in the order they are written, and
+  each of its `variables` can read only those above it. `icons.json` and
+  `translations/en.json` carry none, since Home Assistant looks every string up
+  by key, so they are ordered by name.
 - **A requirement Home Assistant already pins is not pinned in
   `manifest.json`.** Home Assistant installs an integration's requirements under
   its own package constraints, so a second pin would conflict with Home
